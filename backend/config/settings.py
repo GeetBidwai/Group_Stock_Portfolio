@@ -129,3 +129,8 @@ FEATURE_FLAGS = {
     "enable_commodities": os.getenv("FF_ENABLE_COMMODITIES", "true").lower() == "true",
     "enable_crypto": os.getenv("FF_ENABLE_CRYPTO", "true").lower() == "true",
 }
+
+RISK_THRESHOLDS = {
+    "low": 0.01,
+    "medium": 0.02,
+}

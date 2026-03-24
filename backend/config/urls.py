@@ -13,6 +13,7 @@ urlpatterns = [
     path("api/portfolio/", include("apps.comparison_module.urls")),
     path("api/stock/", include("apps.risk_module.urls")),
     path("api/portfolio/", include("apps.clustering_module.urls")),
+    path("api/", include("apps.clustering_module.cluster_stock_urls")),
     path("api/stock/", include("apps.forecasting_module.urls")),
     path("api/sentiment/", include("apps.sentiment_module.urls")),
     path("api/recommendations/", include("apps.recommendations_module.urls")),

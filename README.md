@@ -1,112 +1,313 @@
-# Stock Analytics Platform
+# Stock Sentiment Project
 
-Modular stock analytics platform built with Django REST Framework and React/Vite. The architecture is feature-sliced so auth, portfolio, search, analytics, comparison, risk, clustering, forecasting, commodities, and crypto can evolve independently.
+A modular full-stack market intelligence platform for Indian equities, built with Django REST Framework and React. The project combines portfolio management, stock analytics, comparison tools, forecasting, sentiment analysis, recommendations, commodities correlation, and BTC forecasting in a single feature-oriented codebase.
 
-## Stack
+## Highlights
 
-- Backend: Django, DRF, SimpleJWT, SQLite-first with PostgreSQL-friendly structure
-- Frontend: React, Vite, Recharts
-- Data and analytics: yfinance, pandas, numpy, scikit-learn, statsmodels
-- Password recovery: Telegram OTP via abstracted notification service
+- JWT-based authentication with session tracking
+- Portfolio organization by sector and portfolio type
+- Indian stock search with local reference data and yfinance-backed market snapshots
+- Stock analytics with price history, valuation context, and PE-based insights
+- Stock-to-stock comparison using return, volatility, and risk-adjusted signals
+- Risk categorization based on historical volatility
+- Portfolio and stock clustering
+- Multi-horizon forecasting for stocks and portfolios
+- News-driven sentiment analysis with PDF report export
+- Recommendation engine based on sentiment plus recent trend
+- Gold/Silver correlation analytics
+- BTC/USD hourly and 30-day forecast views
 
-## Folder Tree
-
-```text
-backend/
-  apps/
-    auth_module/
-    portfolio_module/
-    stock_search_module/
-    analytics_module/
-    comparison_module/
-    risk_module/
-    clustering_module/
-    forecasting_module/
-    commodities_module/
-    crypto_module/
-    shared/
-  config/
-  manage.py
-frontend/
-  src/
-    app/
-    components/
-    modules/
-      auth/
-      dashboard/
-      portfolio/
-      stock-search/
-      stock-analytics/
-      stock-comparison/
-      risk/
-      clustering/
-      forecasting/
-      commodities/
-      crypto/
-    routes/
-    services/
-    utils/
-docs/
-  API.md
-  ModuleCustomizationGuide.md
-```
-
-## Setup
+## Tech Stack
 
 ### Backend
 
-1. Create a virtual environment.
-2. Install dependencies with `pip install -r backend/requirements.txt`.
-3. Copy `backend/.env.example` to `backend/.env` and fill the secrets.
-4. Run `python backend/manage.py migrate`.
-5. Start the API with `python backend/manage.py runserver`.
+- Python
+- Django 5
+- Django REST Framework
+- SimpleJWT
+- SQLite for local development
+- yfinance, pandas, numpy
+- scikit-learn, statsmodels
+- requests, reportlab
 
 ### Frontend
 
-1. Run `npm install` inside `frontend`.
-2. Copy `frontend/.env.example` to `frontend/.env`.
-3. Start the app with `npm run dev`.
+- React 18
+- Vite
+- React Router
+- Recharts
 
-## Telegram OTP Linking Strategy
+## Project Structure
 
-The platform stores `telegram_chat_id` and optional `telegram_username` on `UserProfile`. Forgot-password accepts username, email, or Telegram username as the identifier. `PasswordResetService` resolves the user, checks cooldown, creates a single-use OTP record, hashes the OTP in storage, and sends the plaintext code through `TelegramNotificationService`.
+```text
+Stock_sentiment_Project/
+|-- backend/
+|   |-- apps/
+|   |   |-- analytics_module/
+|   |   |-- auth_module/
+|   |   |-- clustering_module/
+|   |   |-- commodities_module/
+|   |   |-- comparison_module/
+|   |   |-- crypto_module/
+|   |   |-- forecasting_module/
+|   |   |-- portfolio_module/
+|   |   |-- recommendations_module/
+|   |   |-- risk_module/
+|   |   |-- sentiment_module/
+|   |   |-- shared/
+|   |   `-- stock_search_module/
+|   |-- config/
+|   |-- manage.py
+|   `-- requirements.txt
+|-- frontend/
+|   |-- src/
+|   |   |-- app/
+|   |   |-- components/
+|   |   |-- modules/
+|   |   |-- routes/
+|   |   |-- services/
+|   |   `-- utils/
+|   |-- package.json
+|   `-- vite.config.js
+`-- docs/
+    |-- API.md
+    `-- ModuleCustomizationGuide.md
+```
 
-To replace Telegram later, keep `PasswordResetService` and swap only the notification implementation plus the profile linkage fields.
+## Core Features
 
-## Feature Flags
+### 1. Authentication
 
-Backend flags live in `settings.FEATURE_FLAGS` and frontend flags live in `frontend/.env`.
+- User registration and login
+- JWT access/refresh flow
+- Session tracking per refresh token
+- Forgot-password flow with Telegram OTP support
+- Development shortcut mode when OTP verification is disabled
 
-- `FF_ENABLE_PORTFOLIO`
-- `FF_ENABLE_COMPARISON`
-- `FF_ENABLE_RISK`
-- `FF_ENABLE_CLUSTERING`
-- `FF_ENABLE_FORECASTING`
-- `FF_ENABLE_COMMODITIES`
-- `FF_ENABLE_CRYPTO`
+### 2. Portfolio Management
 
-## Assumptions
+- Create sectors
+- Create portfolio types under sectors
+- Add and remove portfolio stocks
+- Prevent duplicate stock entries within the same portfolio
 
-- `yfinance` is the default market-data source for local development.
-- The Telegram bot can message the stored `telegram_chat_id`.
-- SQLite is enough for local development; the models are kept conventional for PostgreSQL migration later.
-- Forecasting uses an explainable ARIMA baseline instead of a more operationally heavy ML pipeline.
+### 3. Stock Discovery and Analytics
 
-## Known Limitations
+- Search stock references by symbol or company name
+- Fetch live/cached price history from yfinance
+- Show valuation-oriented analytics such as PE, EPS, intrinsic value estimate, and discount percentage
 
-- Search quality depends on upstream `yfinance` metadata availability.
-- ARIMA on sparse or unstable series can fail without extra fallback handling.
-- The frontend uses localStorage token persistence for local development rather than hardened HTTP-only cookies.
-- Only the data-bearing apps with models currently include explicit migrations.
+### 4. Comparison, Risk, and Clustering
 
-## Future Enhancements
+- Compare two stocks over a selected period
+- Categorize risk using annualized volatility
+- Cluster holdings using KMeans
+- Additional stock clustering view with PCA and optional UMAP-style workflow fallback
 
-- PostgreSQL config, Celery workers, and cached background jobs
-- Better provider search index for Indian equities
-- Confidence intervals, benchmark-aware analytics, and richer dashboard widgets
-- Session/device revocation UI and more granular audit events
+### 5. Forecasting
 
-## Additional Docs
+- Stock forecasting using ARIMA
+- Neural-network-style forecast option using `MLPRegressor`
+- Portfolio next-day forecast aggregation
+- BTC forecast analytics and hourly BTC prediction
 
-- API reference: `docs/API.md`
-- Module replacement and disable guidance: `docs/ModuleCustomizationGuide.md`
+### 6. Sentiment and Recommendations
+
+- Fetch recent stock news from NewsAPI, Yahoo RSS, or Google News RSS
+- Score article sentiment using Databricks if configured
+- Fallback sentiment scoring via `textblob`, `vaderSentiment`, or keyword heuristics
+- Export sentiment analysis as PDF
+- Generate ranked stock recommendations from sentiment plus recent trend
+
+### 7. Commodities and Crypto
+
+- Gold/Silver correlation analysis
+- BTC/USD visualization and forecast metrics
+
+## Local Setup
+
+### Backend
+
+1. Create and activate a virtual environment.
+2. Install dependencies:
+
+```bash
+pip install -r backend/requirements.txt
+```
+
+3. Create `backend/.env` and configure it.
+4. Run migrations:
+
+```bash
+cd backend
+python manage.py migrate
+```
+
+5. Start the backend server:
+
+```bash
+python manage.py runserver
+```
+
+The API will run at `http://127.0.0.1:8000/`.
+
+### Frontend
+
+1. Install frontend dependencies:
+
+```bash
+cd frontend
+npm install
+```
+
+2. Optionally create `frontend/.env` for frontend flags and API base URL.
+3. Start the frontend:
+
+```bash
+npm run dev
+```
+
+The frontend will usually run at `http://127.0.0.1:5173/`.
+
+## Backend Environment Variables
+
+Create `backend/.env` with values like these:
+
+```env
+SECRET_KEY=change-me
+DEBUG=true
+ALLOWED_HOSTS=127.0.0.1,localhost
+JWT_ACCESS_MINUTES=30
+JWT_REFRESH_DAYS=7
+MARKET_DATA_PROVIDER=yfinance
+TELEGRAM_BOT_TOKEN=your-telegram-bot-token
+TELEGRAM_BOT_API_URL=https://api.telegram.org
+TELEGRAM_OTP_EXPIRY_SECONDS=300
+TELEGRAM_OTP_RESEND_COOLDOWN_SECONDS=60
+AUTH_RESET_REQUIRE_OTP=false
+NEWSAPI_KEY=
+DATABRICKS_TOKEN=
+DATABRICKS_SENTIMENT_URL=
+DATABRICKS_TIMEOUT_SECONDS=10
+FF_ENABLE_PORTFOLIO=true
+FF_ENABLE_COMPARISON=true
+FF_ENABLE_RISK=true
+FF_ENABLE_CLUSTERING=true
+FF_ENABLE_FORECASTING=true
+FF_ENABLE_SENTIMENT=true
+FF_ENABLE_COMMODITIES=true
+FF_ENABLE_CRYPTO=true
+```
+
+### Notes
+
+- `AUTH_RESET_REQUIRE_OTP=false` keeps password reset easy during local development.
+- `NEWSAPI_KEY` is optional. Without it, the app falls back to Yahoo Finance RSS and Google News RSS.
+- Databricks sentiment configuration is optional. If missing, fallback sentiment methods are used.
+
+## Frontend Environment Variables
+
+Example `frontend/.env`:
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8000/api
+VITE_FF_ENABLE_CLUSTERING=true
+VITE_FF_ENABLE_FORECASTING=true
+VITE_FF_ENABLE_SENTIMENT=true
+VITE_FF_ENABLE_COMMODITIES=true
+VITE_FF_ENABLE_CRYPTO=true
+```
+
+## Main API Areas
+
+### Auth
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+- `GET /api/auth/sessions`
+- `POST /api/auth/forgot-password/request-otp`
+- `POST /api/auth/forgot-password/verify-otp`
+- `POST /api/auth/forgot-password/reset-password`
+
+### Portfolio and Stocks
+
+- `GET /api/portfolio-types/`
+- `POST /api/portfolio-types/`
+- `GET /api/portfolio-stocks/`
+- `POST /api/portfolio-stocks/`
+- `DELETE /api/portfolio-stocks/:id`
+- `GET /api/sectors/`
+- `POST /api/sectors/`
+- `GET /api/stocks/search?q=...`
+- `GET /api/stocks/risk/`
+
+### Analytics and Intelligence
+
+- `GET /api/stocks/:symbol/analytics`
+- `GET /api/portfolio/pe-comparison`
+- `GET /api/portfolio/portfolio-stock-analytics?portfolio_id=:id`
+- `POST /api/portfolio/compare`
+- `GET /api/portfolio/clustering`
+- `GET /api/cluster-stocks/`
+- `POST /api/stock/risk-categorization`
+- `POST /api/stock/forecast`
+- `POST /api/stock/portfolio-forecast-next-day`
+- `POST /api/sentiment/analyze/`
+- `GET /api/sentiment/report/?stock=:symbol`
+- `GET /api/recommendations/`
+- `GET /api/commodities/gold-silver-correlation`
+- `GET /api/crypto/btcusd-hourly`
+- `GET /api/crypto/btc-forecast/`
+
+For module details, see [docs/API.md](docs/API.md) and [docs/ModuleCustomizationGuide.md](docs/ModuleCustomizationGuide.md).
+
+## Data Sources and Behavior
+
+- Market data is primarily fetched through `yfinance`.
+- Stock search uses a local `StockReference` table and seed data for initial discovery.
+- Several services cache results in Django's local memory cache.
+- The yfinance provider also stores local snapshot files for resilience when live responses are incomplete.
+
+## Current Development Notes
+
+- SQLite is the current local database.
+- Authentication tokens are stored in browser localStorage in the current frontend implementation.
+- Some advanced features degrade gracefully when external data sources are unavailable.
+- UMAP-style clustering is optional; the implementation falls back to PCA if the required package is not installed.
+
+## Useful Commands
+
+### Backend
+
+```bash
+cd backend
+python manage.py migrate
+python manage.py runserver
+python manage.py seed_stocks
+python manage.py update_risk
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+npm run build
+```
+
+## Future Improvements
+
+- PostgreSQL configuration for production
+- Celery/background jobs for long-running data tasks
+- Better provider coverage for Indian markets
+- More robust production auth hardening
+- Stronger automated test coverage
+- CI/CD and deployment documentation
+
+## License
+
+Add your preferred license before publishing the repository.

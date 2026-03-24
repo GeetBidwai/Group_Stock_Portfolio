@@ -4,7 +4,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { PEChart } from "../components/PEChart";
 import { StockAutocomplete } from "../components/StockAutocomplete";
 import { portfolioApi } from "../services/portfolioApi";
-import { stockApi } from "../../stock-search/services/stockApi";
 
 export function PortfolioDetailPage() {
   const navigate = useNavigate();
@@ -12,8 +11,7 @@ export function PortfolioDetailPage() {
   const portfolioId = Number(id);
   const [portfolios, setPortfolios] = useState([]);
   const [stocks, setStocks] = useState([]);
-  const [analyticsBySymbol, setAnalyticsBySymbol] = useState({});
-  const [peComparison, setPeComparison] = useState({ items: [], portfolio_average_pe: null });
+  const [portfolioAnalytics, setPortfolioAnalytics] = useState({ items: [], pe_items: [], portfolio_average_pe: null });
   const [selectedStock, setSelectedStock] = useState(null);
   const [showAddStockForm, setShowAddStockForm] = useState(false);
   const [stockForm, setStockForm] = useState({ symbol: "", company_name: "", quantity: 1, average_buy_price: "" });
@@ -21,14 +19,14 @@ export function PortfolioDetailPage() {
 
   async function load() {
     try {
-      const [portfolioData, stockData, peData] = await Promise.all([
+      const [portfolioData, stockData, analyticsData] = await Promise.all([
         portfolioApi.listTypes(),
         portfolioApi.listStocks(),
-        portfolioApi.peComparison(),
+        portfolioApi.portfolioStockAnalytics(portfolioId),
       ]);
       setPortfolios(portfolioData);
       setStocks(stockData);
-      setPeComparison(peData);
+      setPortfolioAnalytics(analyticsData);
       setError("");
     } catch (err) {
       setError(err.message);
@@ -37,7 +35,7 @@ export function PortfolioDetailPage() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [portfolioId]);
 
   const portfolio = useMemo(
     () => portfolios.find((item) => item.id === portfolioId),
@@ -49,44 +47,13 @@ export function PortfolioDetailPage() {
     [portfolioId, stocks],
   );
 
-  const portfolioPEItems = useMemo(() => {
-    const symbols = new Set(portfolioStocks.map((stock) => stock.symbol));
-    return (peComparison.items || []).filter((item) => symbols.has(item.symbol));
-  }, [peComparison.items, portfolioStocks]);
-
-  useEffect(() => {
-    if (!portfolioStocks.length) {
-      setAnalyticsBySymbol({});
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadAnalytics() {
-      try {
-        const entries = await Promise.all(
-          portfolioStocks.map(async (stock) => {
-            const analytics = await stockApi.analytics(stock.symbol);
-            return [stock.symbol, analytics];
-          }),
-        );
-
-        if (!cancelled) {
-          setAnalyticsBySymbol(Object.fromEntries(entries));
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err.message);
-        }
-      }
-    }
-
-    loadAnalytics();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [portfolioStocks]);
+  const analyticsBySymbol = useMemo(
+    () =>
+      Object.fromEntries(
+        (portfolioAnalytics.items || []).map((item) => [item.symbol, item]),
+      ),
+    [portfolioAnalytics.items],
+  );
 
   return (
     <>
@@ -183,7 +150,7 @@ export function PortfolioDetailPage() {
               {portfolioStocks.map((stock) => {
                 const peRatio = analyticsBySymbol[stock.symbol]?.trailing_pe;
                 const currentPrice = analyticsBySymbol[stock.symbol]?.current_price;
-                const companyName = stock.company_name || analyticsBySymbol[stock.symbol]?.name || stock.symbol;
+                const companyName = stock.company_name || analyticsBySymbol[stock.symbol]?.company_name || stock.symbol;
 
                 return (
                   <article
@@ -254,7 +221,7 @@ export function PortfolioDetailPage() {
                 <h3 style={{ margin: 0 }}>P/E Ratio Graph</h3>
                 <p className="muted" style={{ margin: "6px 0 0" }}>All available stocks from this portfolio are shown together here.</p>
               </div>
-              <PEChart items={portfolioPEItems} />
+              <PEChart items={portfolioAnalytics.pe_items || []} />
             </div>
           </div>
         )}

@@ -22,7 +22,7 @@ export function AppLayout() {
           <NavLink to="/forecast">Forecast</NavLink>
           {featureFlags.sentiment && <NavLink to="/sentiment">Sentiment</NavLink>}
           {featureFlags.commodities && <NavLink to="/commodities">Gold/Silver</NavLink>}
-          {featureFlags.crypto && <NavLink to="/crypto">BTC Forecast</NavLink>}
+          {featureFlags.crypto && <NavLink to="/btc">BTC Forecast</NavLink>}
           <button type="button" onClick={logout}>Logout</button>
         </aside>
         <main className="grid" style={{ alignContent: "start" }}>

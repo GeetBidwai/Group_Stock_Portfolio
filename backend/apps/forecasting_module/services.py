@@ -90,13 +90,20 @@ class StockForecastingService:
             raise ValueError("Data has no variance")
 
         try:
-            model = ARIMA(data, order=(1, 1, 1))
+            log_prices = np.log(data.astype(float))
+            model = ARIMA(
+                log_prices,
+                order=(2, 1, 2),
+                trend="t",
+                enforce_stationarity=False,
+                enforce_invertibility=False,
+            )
             model_fit = model.fit()
-            forecast = model_fit.forecast(steps=steps)
-            return np.asarray(forecast, dtype=float)
+            forecast = np.exp(np.asarray(model_fit.forecast(steps=steps), dtype=float))
+            return self._shape_arima_forecast(data, forecast)
         except Exception as exc:
             print("ARIMA ERROR:", str(exc))
-            return self._moving_average_forecast(data, steps)
+            return self._arima_fallback_forecast(data, steps)
 
     def _forecast_rnn(self, data: pd.Series, steps: int) -> np.ndarray:
         series = pd.Series(data).dropna()
@@ -150,6 +157,52 @@ class StockForecastingService:
         window = min(10, len(data))
         moving_average = float(pd.Series(data).tail(window).mean())
         return np.asarray([moving_average] * steps, dtype=float)
+
+    def _shape_arima_forecast(self, data: pd.Series, forecast: np.ndarray) -> np.ndarray:
+        if len(forecast) == 0:
+            return forecast
+
+        history = pd.Series(data, dtype="float64").reset_index(drop=True)
+        last_price = float(history.iloc[-1])
+        recent_changes = history.diff().dropna()
+
+        if recent_changes.empty:
+            forecast[0] = last_price
+            return forecast
+
+        recent_window = recent_changes.tail(min(20, len(recent_changes)))
+        local_drift = float(recent_window.tail(min(5, len(recent_window))).mean())
+        centered_pattern = recent_window - float(recent_window.mean())
+        repeated_pattern = np.resize(centered_pattern.to_numpy(dtype=float), len(forecast))
+
+        drift_curve = np.linspace(local_drift * 0.15, local_drift * 0.75, len(forecast))
+        wave_curve = np.cumsum(repeated_pattern * np.linspace(0.12, 0.04, len(forecast)))
+        adjusted = forecast + drift_curve + wave_curve
+
+        adjusted = pd.Series(np.concatenate([[last_price], adjusted])).ewm(alpha=0.55, adjust=False).mean().to_numpy()[1:]
+        adjusted[0] = (adjusted[0] + last_price) / 2
+        adjusted = np.clip(adjusted, a_min=0.0, a_max=None)
+        return adjusted
+
+    def _arima_fallback_forecast(self, data: pd.Series, steps: int) -> np.ndarray:
+        history = pd.Series(data, dtype="float64").reset_index(drop=True)
+        last_price = float(history.iloc[-1])
+        recent_changes = history.diff().dropna()
+
+        if recent_changes.empty:
+            return np.asarray([last_price] * steps, dtype=float)
+
+        local_drift = float(recent_changes.tail(min(10, len(recent_changes))).mean())
+        centered_pattern = recent_changes.tail(min(12, len(recent_changes))) - float(recent_changes.tail(min(12, len(recent_changes))).mean())
+        repeated_pattern = np.resize(centered_pattern.to_numpy(dtype=float), steps)
+
+        forecast = []
+        next_price = last_price
+        for index in range(steps):
+            next_price += (local_drift * 0.35) + (repeated_pattern[index] * 0.18)
+            forecast.append(max(next_price, 0.0))
+
+        return pd.Series(forecast).ewm(alpha=0.6, adjust=False).mean().to_numpy(dtype=float)
 
     def _error_response(self, symbol: str, model_name: str, horizon: str, historical_items: list[dict], error_message: str, status: int) -> dict:
         return {

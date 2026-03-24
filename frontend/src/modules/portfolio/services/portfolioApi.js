@@ -11,6 +11,7 @@ export const portfolioApi = {
   addStock: (payload) => apiClient.post("/portfolio-stocks/", payload),
   deleteStock: (id) => apiClient.delete(`/portfolio-stocks/${id}`),
   peComparison: () => apiClient.get("/portfolio/pe-comparison"),
+  portfolioStockAnalytics: (portfolioId) => apiClient.get(`/portfolio/portfolio-stock-analytics?portfolio_id=${encodeURIComponent(portfolioId)}`),
   clustering: () => apiClient.get("/portfolio/clustering"),
   portfolioForecast: (payload) => apiClient.post("/stock/portfolio-forecast-next-day", payload),
 };

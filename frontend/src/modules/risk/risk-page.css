@@ -1,0 +1,217 @@
+.risk-page {
+  display: grid;
+  gap: 20px;
+}
+
+.risk-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 360px);
+  gap: 24px;
+  align-items: start;
+}
+
+.risk-kicker {
+  margin: 0 0 10px;
+  color: var(--muted);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.risk-title {
+  margin: 0 0 10px;
+  font-size: clamp(2.2rem, 3vw, 3.2rem);
+}
+
+.risk-subtitle {
+  margin: 0;
+  max-width: 720px;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.risk-controls {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(17, 75, 95, 0.09);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 249, 247, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.risk-control {
+  display: grid;
+  gap: 8px;
+}
+
+.risk-control__label {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.risk-controls select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(17, 75, 95, 0.14);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.risk-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 420px);
+  gap: 20px;
+}
+
+.risk-section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.risk-section-header h2 {
+  margin: 0 0 6px;
+  font-size: 1.9rem;
+}
+
+.risk-section-header p {
+  margin: 0;
+}
+
+.risk-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.risk-summary-card {
+  padding: 18px 18px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(17, 75, 95, 0.08);
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.risk-summary-card p {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.risk-summary-card strong {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.risk-summary-card--high strong {
+  color: #d94841;
+}
+
+.risk-summary-card--medium strong {
+  color: #f08c00;
+}
+
+.risk-summary-card--low strong {
+  color: #2f9e44;
+}
+
+.risk-summary-card--total strong {
+  color: var(--accent);
+}
+
+.risk-chart-shell {
+  height: 320px;
+}
+
+.risk-overview-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.risk-overview-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) 1fr;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(17, 75, 95, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.risk-overview-card__band {
+  display: flex;
+  align-items: center;
+  min-height: 132px;
+  padding: 22px 24px;
+  color: white;
+}
+
+.risk-overview-card__band p {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.risk-overview-card__band strong {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.risk-overview-card__body {
+  display: grid;
+  gap: 14px;
+  padding: 22px 24px;
+  align-content: center;
+}
+
+.risk-overview-card__description {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.55;
+  font-weight: 700;
+}
+
+.risk-panel--high .risk-overview-card__band {
+  background: linear-gradient(135deg, #c92a2a, #f03e3e);
+}
+
+.risk-panel--medium .risk-overview-card__band {
+  background: linear-gradient(135deg, #f08c00, #ffc107);
+}
+
+.risk-panel--low .risk-overview-card__band {
+  background: linear-gradient(135deg, #2b8a3e, #37b24d);
+}
+
+.risk-panel--unknown .risk-overview-card__band {
+  background: linear-gradient(135deg, #5f6b6d, #88979a);
+}
+
+.risk-table-shell {
+  overflow-x: auto;
+}
+
+.risk-table th {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.risk-table td {
+  vertical-align: middle;
+}
+
+@media (max-width: 1024px) {
+  .risk-hero,
+  .risk-dashboard-grid,
+  .risk-overview-card {
+    grid-template-columns: 1fr;
+  }
+
+  .risk-overview-card__band {
+    min-height: 0;
+  }
+}
