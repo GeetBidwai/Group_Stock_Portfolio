@@ -25,10 +25,11 @@ A modular full-stack market intelligence platform for Indian equities, built wit
 - Django 5
 - Django REST Framework
 - SimpleJWT
-- SQLite for local development
+- PostgreSQL for active development/runtime
 - yfinance, pandas, numpy
 - scikit-learn, statsmodels
 - requests, reportlab
+- psycopg 3
 
 ### Frontend
 
@@ -177,6 +178,13 @@ Create `backend/.env` with values like these:
 SECRET_KEY=change-me
 DEBUG=true
 ALLOWED_HOSTS=127.0.0.1,localhost
+DB_ENGINE=postgres
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=stock_analytics_db
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=change-me
+POSTGRES_CONN_MAX_AGE=60
 JWT_ACCESS_MINUTES=30
 JWT_REFRESH_DAYS=7
 MARKET_DATA_PROVIDER=yfinance
@@ -201,6 +209,8 @@ FF_ENABLE_CRYPTO=true
 
 ### Notes
 
+- The project is currently configured to run on PostgreSQL.
+- SQLite can still be used only as a fallback if `DB_ENGINE=sqlite`.
 - `AUTH_RESET_REQUIRE_OTP=false` keeps password reset easy during local development.
 - `NEWSAPI_KEY` is optional. Without it, the app falls back to Yahoo Finance RSS and Google News RSS.
 - Databricks sentiment configuration is optional. If missing, fallback sentiment methods are used.
@@ -266,6 +276,7 @@ For module details, see [docs/API.md](docs/API.md) and [docs/ModuleCustomization
 
 ## Data Sources and Behavior
 
+- Django now uses PostgreSQL through environment-based settings.
 - Market data is primarily fetched through `yfinance`.
 - Stock search uses a local `StockReference` table and seed data for initial discovery.
 - Several services cache results in Django's local memory cache.
@@ -273,7 +284,8 @@ For module details, see [docs/API.md](docs/API.md) and [docs/ModuleCustomization
 
 ## Current Development Notes
 
-- SQLite is the current local database.
+- PostgreSQL is the current database backend.
+- A local SQLite backup/fixture may still exist only for migration rollback/reference.
 - Authentication tokens are stored in browser localStorage in the current frontend implementation.
 - Some advanced features degrade gracefully when external data sources are unavailable.
 - UMAP-style clustering is optional; the implementation falls back to PCA if the required package is not installed.
@@ -301,7 +313,6 @@ npm run build
 
 ## Future Improvements
 
-- PostgreSQL configuration for production
 - Celery/background jobs for long-running data tasks
 - Better provider coverage for Indian markets
 - More robust production auth hardening

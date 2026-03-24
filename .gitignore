@@ -24,6 +24,7 @@ frontend/.env
 backend/db.sqlite3
 backend/staticfiles/
 backend/.yfinance-cache/
+backend/sqlite_data_backup.json
 *.log
 
 # Node / frontend artifacts
