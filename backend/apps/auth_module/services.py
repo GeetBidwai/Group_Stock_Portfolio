@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db.models import Q
+from requests import RequestException
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -14,6 +15,10 @@ from apps.shared.services.otp_service import OTPService
 from apps.shared.services.telegram_notification_service import TelegramNotificationService
 
 User = get_user_model()
+
+
+def send_telegram_message(chat_id, message: str) -> None:
+    TelegramNotificationService().send_message(str(chat_id), message)
 
 
 class AuthService:
@@ -63,16 +68,22 @@ class PasswordResetService:
                 "otp_required": False,
                 "message": "OTP verification is disabled in this environment. You can reset the password directly.",
             }
-        otp = self._create_and_send_otp(user)
-        return {"identifier": identifier, "expires_at": otp.expires_at, "otp_required": True}
+        otp, delivery_payload = self._create_and_send_otp(user)
+        return {"identifier": identifier, "expires_at": otp.expires_at, "otp_required": True, **delivery_payload}
 
-    def request_reset_otp(self, mobile_number: str) -> dict:
+    def request_reset_otp(self, mobile_number: str, telegram_chat_id: int | None = None) -> dict:
         user = self._find_user_by_mobile(mobile_number)
-        otp = self._create_and_send_otp(user)
+        if telegram_chat_id is not None:
+            stored_chat_id = self._get_user_telegram_chat_id(user)
+            if stored_chat_id != str(telegram_chat_id):
+                raise ValidationError("Phone number and Telegram Chat ID do not match our records.")
+        otp, delivery_payload = self._create_and_send_otp(user)
         return {
-            "mobile_number": user.profile.mobile_number,
+            "mobile_number": self._get_user_phone_number(user),
+            "phone_number": self._get_user_phone_number(user),
+            "telegram_chat_id": self._get_user_telegram_chat_id(user),
             "expires_at": otp.expires_at,
-            "message": "OTP sent to your Telegram app.",
+            **delivery_payload,
         }
 
     def verify_otp(self, identifier: str, otp: str) -> dict:
@@ -87,6 +98,11 @@ class PasswordResetService:
         self._verify_otp_record(user, otp)
         token = secrets.token_urlsafe(32)
         cache.set(self._reset_token_key(token), user.pk, settings.PASSWORD_RESET_TOKEN_EXPIRY_SECONDS)
+        cache.set(
+            self._otp_verified_key(self._get_user_phone_number(user)),
+            {"user_id": user.pk},
+            settings.PASSWORD_RESET_TOKEN_EXPIRY_SECONDS,
+        )
         return {
             "verified": True,
             "token": token,
@@ -119,13 +135,30 @@ class PasswordResetService:
         user.save(update_fields=["password"])
         PasswordResetOTP.objects.filter(user=user, is_used=False).update(is_used=True)
         cache.delete(self._reset_token_key(token))
+        cache.delete(self._otp_verified_key(self._get_user_phone_number(user)))
+
+    def reset_password_by_mobile(self, mobile_number: str, new_password: str) -> None:
+        user = self._find_user_by_mobile(mobile_number)
+        normalized_mobile_number = self._get_user_phone_number(user)
+        verification_cache = cache.get(self._otp_verified_key(normalized_mobile_number))
+        if not verification_cache or int(verification_cache.get("user_id", 0)) != user.pk:
+            raise ValidationError("OTP verification is required before resetting the password.")
+
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+        PasswordResetOTP.objects.filter(user=user, is_used=False).update(is_used=True)
+        cache.delete(self._otp_verified_key(normalized_mobile_number))
 
     def _create_and_send_otp(self, user):
-        if not user.profile.telegram_chat_id:
+        chat_id = self._get_user_telegram_chat_id(user)
+        if not chat_id:
             raise ValidationError("Telegram account is not linked for this user.")
+        use_debug_preview = not settings.TELEGRAM_BOT_TOKEN and (
+            settings.DEBUG or getattr(settings, "ALLOW_LOCAL_OTP_PREVIEW", False)
+        )
 
         latest = PasswordResetOTP.objects.filter(user=user, is_used=False).order_by("-created_at").first()
-        if latest and timezone.now() < latest.resend_available_at:
+        if latest and not use_debug_preview and timezone.now() < latest.resend_available_at:
             seconds_left = int((latest.resend_available_at - timezone.now()).total_seconds())
             raise ValidationError(f"OTP resend is on cooldown for {seconds_left} more seconds.")
 
@@ -140,12 +173,28 @@ class PasswordResetService:
             resend_available_at=timezone.now() + timedelta(seconds=settings.TELEGRAM_OTP_RESEND_COOLDOWN_SECONDS),
         )
         minutes = max(1, settings.TELEGRAM_OTP_EXPIRY_SECONDS // 60)
-        self.telegram_service.send_otp(
-            user.profile.telegram_chat_id,
-            f"Your OTP is {code}. Valid for {minutes} minute(s). Do not share it with anyone.",
-        )
+        if not settings.TELEGRAM_BOT_TOKEN:
+            if use_debug_preview:
+                self._register_request_attempt(user)
+                return otp, {
+                    "message": "Telegram bot is not configured. Using local development OTP preview instead.",
+                    "delivery_method": "debug_preview",
+                    "otp_preview": code,
+                    "otp_required": True,
+                }
+            raise ValidationError("Telegram OTP service is not configured. Add TELEGRAM_BOT_TOKEN in the backend environment.")
+        try:
+            self.telegram_service.send_otp(chat_id, f"Your OTP is {code}. Valid for {minutes} minute(s). Do not share it with anyone.")
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+        except RequestException as exc:
+            raise ValidationError("Unable to send OTP through Telegram right now. Please try again in a moment.") from exc
         self._register_request_attempt(user)
-        return otp
+        return otp, {
+            "message": "OTP sent to your Telegram app.",
+            "delivery_method": "telegram",
+            "otp_required": True,
+        }
 
     def _verify_otp_record(self, user, otp: str) -> PasswordResetOTP:
         record = PasswordResetOTP.objects.filter(user=user, is_used=False).order_by("-created_at").first()
@@ -175,7 +224,9 @@ class PasswordResetService:
 
     def _find_user_by_mobile(self, mobile_number: str):
         normalized_mobile_number = self._normalize_mobile_number(mobile_number)
-        user = User.objects.filter(profile__mobile_number__iexact=normalized_mobile_number).first()
+        user = User.objects.filter(
+            Q(phone_number__iexact=normalized_mobile_number) | Q(profile__mobile_number__iexact=normalized_mobile_number)
+        ).first()
         if not user:
             raise ValidationError("User not found for this mobile number.")
         return user
@@ -191,6 +242,9 @@ class PasswordResetService:
 
     def _reset_token_key(self, token: str) -> str:
         return f"password-reset:token:{token}"
+
+    def _otp_verified_key(self, mobile_number: str) -> str:
+        return f"password-reset:verified:{mobile_number}"
 
     def _check_request_limit(self, user) -> None:
         attempts = int(cache.get(self._request_limit_key(user.pk), 0) or 0)
@@ -211,9 +265,19 @@ class PasswordResetService:
             | Q(email__iexact=raw_identifier)
             | Q(profile__telegram_username__iexact=raw_identifier)
             | Q(profile__telegram_username__iexact=normalized_telegram_username)
+            | Q(phone_number__iexact=raw_identifier)
+            | Q(phone_number__iexact=normalized_mobile_number)
             | Q(profile__mobile_number__iexact=raw_identifier)
             | Q(profile__mobile_number__iexact=normalized_mobile_number)
         ).first()
         if not user:
             raise ValidationError("User not found.")
         return user
+
+    def _get_user_phone_number(self, user) -> str:
+        return "".join(ch for ch in str(user.phone_number or user.profile.mobile_number or "") if ch.isdigit())
+
+    def _get_user_telegram_chat_id(self, user) -> str:
+        if user.telegram_chat_id is not None:
+            return str(user.telegram_chat_id)
+        return str(user.profile.telegram_chat_id or "").strip()

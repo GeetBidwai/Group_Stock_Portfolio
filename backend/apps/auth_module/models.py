@@ -5,6 +5,9 @@ from django.utils import timezone
 
 class User(AbstractUser):
     email = models.EmailField(unique=True)
+    phone_number = models.CharField(max_length=32, blank=True, null=True, db_index=True)
+    telegram_chat_id = models.BigIntegerField(blank=True, null=True, db_index=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
 
 
 class UserProfile(models.Model):

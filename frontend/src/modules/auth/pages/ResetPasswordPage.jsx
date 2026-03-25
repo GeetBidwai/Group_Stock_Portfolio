@@ -5,9 +5,10 @@ import { authApi } from "../services/authApi";
 
 export function ResetPasswordPage() {
   const navigate = useNavigate();
-  const resetToken = sessionStorage.getItem("passwordResetToken") || "";
+  const phoneNumber = sessionStorage.getItem("resetPhoneNumber") || "";
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   async function handleSubmit(event) {
@@ -18,9 +19,13 @@ export function ResetPasswordPage() {
     }
     try {
       setError("");
-      await authApi.resetPasswordWithToken({ token: resetToken, new_password: password });
-      sessionStorage.removeItem("resetMobileNumber");
+      setMessage("");
+      await authApi.resetPassword({ phone_number: phoneNumber, new_password: password });
+      sessionStorage.removeItem("resetPhoneNumber");
+      sessionStorage.removeItem("resetTelegramChatId");
       sessionStorage.removeItem("passwordResetToken");
+      sessionStorage.removeItem("debugOtpPreview");
+      setMessage("Password reset successful. You can log in with your new password.");
       navigate("/login");
     } catch (err) {
       setError(err.message);
@@ -35,6 +40,7 @@ export function ResetPasswordPage() {
         <form className="form" onSubmit={handleSubmit}>
           <input type="password" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} />
           <input type="password" placeholder="Confirm new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+          {message && <p>{message}</p>}
           {error && <p>{error}</p>}
           <button className="btn" type="submit">Reset password</button>
         </form>

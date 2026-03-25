@@ -11,6 +11,7 @@ from apps.auth_module.views import TelegramLinkSignupCompleteView
 
 @override_settings(
     TELEGRAM_BOT_USERNAME="otp_provider_bot",
+    TELEGRAM_BOT_TOKEN="test-bot-token",
     TELEGRAM_WEBHOOK_SECRET="secret-123",
     TELEGRAM_SIGNUP_LINK_EXPIRY_SECONDS=900,
 )

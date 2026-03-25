@@ -1,6 +1,8 @@
 from django.conf import settings
 from rest_framework import generics, permissions, response, status, views
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import TokenError
 
 from apps.auth_module.models import UserSession
 from apps.auth_module.serializers import (
@@ -23,11 +25,17 @@ from apps.auth_module.telegram_link_service import TelegramSignupLinkService
 
 class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
     serializer_class = RegisterSerializer
+
+
+class SignupView(RegisterView):
+    pass
 
 
 class LoginView(views.APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -38,10 +46,14 @@ class LoginView(views.APIView):
 
 class RefreshView(views.APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = TokenRefreshSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError as exc:
+            raise ValidationError({"refresh": [str(exc)]}) from exc
         return response.Response(serializer.validated_data)
 
 
@@ -67,6 +79,7 @@ class SessionListView(generics.ListAPIView):
 
 class ForgotPasswordRequestView(views.APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = ForgotPasswordRequestSerializer(data=request.data)
@@ -76,6 +89,7 @@ class ForgotPasswordRequestView(views.APIView):
 
 class ForgotPasswordVerifyView(views.APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = VerifyOTPSerializer(data=request.data)
@@ -90,6 +104,7 @@ class ForgotPasswordVerifyView(views.APIView):
 
 class ForgotPasswordResetView(views.APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
@@ -103,44 +118,57 @@ class ForgotPasswordResetView(views.APIView):
 
 class RequestResetOTPView(views.APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = RequestResetOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return response.Response(
-            PasswordResetService().request_reset_otp(serializer.validated_data["mobile_number"])
+            PasswordResetService().request_reset_otp(
+                serializer.validated_data["phone_number"],
+                serializer.validated_data.get("telegram_chat_id"),
+            )
         )
 
 
 class VerifyResetOTPView(views.APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = VerifyResetOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return response.Response(
             PasswordResetService().verify_reset_otp(
-                serializer.validated_data["mobile_number"],
-                serializer.validated_data["otp"],
+                serializer.validated_data["phone_number"],
+                serializer.validated_data["otp_code"],
             )
         )
 
 
 class ResetPasswordWithTokenView(views.APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = ResetPasswordWithTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        PasswordResetService().reset_password_with_token(
-            serializer.validated_data["token"],
-            serializer.validated_data["new_password"],
-        )
+        if serializer.validated_data.get("token"):
+            PasswordResetService().reset_password_with_token(
+                serializer.validated_data["token"],
+                serializer.validated_data["new_password"],
+            )
+        else:
+            PasswordResetService().reset_password_by_mobile(
+                serializer.validated_data["phone_number"],
+                serializer.validated_data["new_password"],
+            )
         return response.Response({"message": "Password reset successful."})
 
 
 class TelegramLinkSessionCreateView(views.APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = TelegramLinkSessionCreateSerializer(data=request.data)
@@ -150,6 +178,7 @@ class TelegramLinkSessionCreateView(views.APIView):
 
 class TelegramLinkSessionStatusView(views.APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def get(self, request, token: str):
         return response.Response(TelegramSignupLinkService().get_status(token))
@@ -157,6 +186,7 @@ class TelegramLinkSessionStatusView(views.APIView):
 
 class TelegramLinkSignupCompleteView(views.APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         serializer = CompleteTelegramSignupSerializer(data=request.data)
