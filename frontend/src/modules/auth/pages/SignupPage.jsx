@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { AuthShell } from "../../../components/AuthShell";
 import { useAuth } from "../hooks/useAuth";
 
 const CHAT_ID_STEPS = [
@@ -37,8 +38,7 @@ export function SignupPage() {
   }
 
   return (
-    <div className="page-shell grid" style={{ placeItems: "center" }}>
-      <div className="panel" style={{ width: "min(560px, 100%)" }}>
+    <AuthShell>
         <h1>Sign Up</h1>
         <p className="muted">Create your account with your phone number and Telegram Chat ID so OTP recovery works end to end.</p>
         <form className="form" onSubmit={handleSubmit}>
@@ -76,7 +76,6 @@ export function SignupPage() {
           <button className="btn" type="submit">Create account</button>
         </form>
         <p><Link to="/login">Back to login</Link></p>
-      </div>
-    </div>
+    </AuthShell>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { AuthShell } from "../../../components/AuthShell";
 import { authApi } from "../services/authApi";
 
 const CHAT_ID_STEPS = [
@@ -41,8 +42,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="page-shell grid" style={{ placeItems: "center" }}>
-      <div className="panel" style={{ width: "min(520px, 100%)" }}>
+    <AuthShell>
         <h1>Forgot Password</h1>
         <p className="muted">Enter the phone number and Telegram Chat ID linked to your account. We will send the OTP to your Telegram bot chat.</p>
         <form className="form" onSubmit={handleSubmit}>
@@ -81,7 +81,6 @@ export function ForgotPasswordPage() {
           {error && <p>{error}</p>}
           <button className="btn" type="submit">Get OTP</button>
         </form>
-      </div>
-    </div>
+    </AuthShell>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { AuthShell } from "../../../components/AuthShell";
 import { authApi } from "../services/authApi";
 
 export function OTPVerificationPage() {
@@ -29,8 +30,7 @@ export function OTPVerificationPage() {
   }
 
   return (
-    <div className="page-shell grid" style={{ placeItems: "center" }}>
-      <div className="panel" style={{ width: "min(460px, 100%)" }}>
+    <AuthShell panelClassName="auth-panel--compact">
         <h1>OTP Verification</h1>
         <p className="muted">Enter the OTP sent to your Telegram app.</p>
         {debugOtpPreview ? <p>Development OTP: <strong>{debugOtpPreview}</strong></p> : null}
@@ -39,7 +39,6 @@ export function OTPVerificationPage() {
           {error && <p>{error}</p>}
           <button className="btn" type="submit">Verify OTP</button>
         </form>
-      </div>
-    </div>
+    </AuthShell>
   );
 }

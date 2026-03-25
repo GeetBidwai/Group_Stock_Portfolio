@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" role="img" aria-labelledby="title">
+  <title>Stock Analytics Platform Logo</title>
+  <g fill="none" stroke="#0d6cc3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M35 178c13-66 64-115 125-115s112 49 125 115" stroke-width="10"/>
+    <path d="M160 183V33" stroke-width="12"/>
+    <path d="M160 33l-17 25h34l-17-25Z" fill="#0d6cc3" stroke-width="6"/>
+  </g>
+  <g fill="#0d6cc3">
+    <rect x="58" y="118" width="16" height="74" rx="2"/>
+    <rect x="50" y="138" width="32" height="34" rx="2"/>
+    <rect x="102" y="96" width="16" height="86" rx="2"/>
+    <rect x="94" y="118" width="32" height="42" rx="2"/>
+    <rect x="152" y="116" width="16" height="76" rx="2"/>
+    <rect x="144" y="144" width="32" height="28" rx="2"/>
+    <rect x="202" y="96" width="16" height="86" rx="2"/>
+    <rect x="194" y="118" width="32" height="42" rx="2"/>
+    <rect x="246" y="118" width="16" height="74" rx="2"/>
+    <rect x="238" y="138" width="32" height="34" rx="2"/>
+  </g>
+</svg>

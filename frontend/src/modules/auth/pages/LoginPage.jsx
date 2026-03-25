@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { AuthShell } from "../../../components/AuthShell";
 import { useAuth } from "../hooks/useAuth";
 
 export function LoginPage() {
@@ -20,8 +21,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="page-shell grid" style={{ placeItems: "center" }}>
-      <div className="panel" style={{ width: "min(460px, 100%)" }}>
+    <AuthShell panelClassName="auth-panel--compact">
         <h1>Login</h1>
         <p className="muted">Access the protected analytics workspace.</p>
         <form className="form" onSubmit={handleSubmit}>
@@ -31,7 +31,6 @@ export function LoginPage() {
           <button className="btn" type="submit">Login</button>
         </form>
         <p><Link to="/signup">Create account</Link> | <Link to="/forgot-password">Forgot password</Link></p>
-      </div>
-    </div>
+    </AuthShell>
   );
 }

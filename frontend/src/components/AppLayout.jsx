@@ -2,6 +2,7 @@ import { NavLink, Outlet } from "react-router-dom";
 
 import { useAuth } from "../modules/auth/hooks/useAuth";
 import { featureFlags } from "../utils/featureFlags";
+import { Logo } from "./Logo";
 
 export function AppLayout() {
   const { logout, user } = useAuth();
@@ -10,8 +11,8 @@ export function AppLayout() {
     <div className="page-shell">
       <div className="nav-shell">
         <aside className="panel sidebar">
-          <div>
-            <h2>Market Atlas</h2>
+          <div className="sidebar-brand">
+            <Logo />
             <p className="muted">{user?.username}</p>
           </div>
           <NavLink to="/">Dashboard</NavLink>

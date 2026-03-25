@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import { AuthShell } from "../../../components/AuthShell";
 import { authApi } from "../services/authApi";
 
 export function ResetPasswordPage() {
@@ -33,8 +34,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div className="page-shell grid" style={{ placeItems: "center" }}>
-      <div className="panel" style={{ width: "min(460px, 100%)" }}>
+    <AuthShell panelClassName="auth-panel--compact">
         <h1>Reset Password</h1>
         <p className="muted">Set a new password to finish recovering your account.</p>
         <form className="form" onSubmit={handleSubmit}>
@@ -45,7 +45,6 @@ export function ResetPasswordPage() {
           <button className="btn" type="submit">Reset password</button>
         </form>
         <p><Link to="/login">Return to login</Link></p>
-      </div>
-    </div>
+    </AuthShell>
   );
 }

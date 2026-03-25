@@ -38,6 +38,65 @@ select {
   padding: 24px;
 }
 
+.brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  max-width: 100%;
+  transition: transform 0.2s ease;
+}
+
+.brand-link:hover {
+  transform: scale(1.05);
+}
+
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 52px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.brand-name,
+.brand-fallback {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.sidebar-brand {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.auth-shell {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 24px;
+}
+
+.auth-header {
+  display: flex;
+  align-items: flex-start;
+}
+
+.auth-content {
+  display: grid;
+  place-items: center;
+}
+
+.auth-panel {
+  width: min(560px, 100%);
+}
+
+.auth-panel--compact {
+  width: min(460px, 100%);
+}
+
 .panel {
   background: var(--panel);
   backdrop-filter: blur(14px);
@@ -177,5 +236,24 @@ mark {
 @media (max-width: 900px) {
   .nav-shell {
     grid-template-columns: 1fr;
+  }
+
+  .brand-logo {
+    height: 34px;
+  }
+
+  .brand-name,
+  .brand-fallback {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .page-shell {
+    padding: 16px;
+  }
+
+  .brand-logo {
+    height: 28px;
   }
 }
