@@ -1,3 +1,52 @@
-git add .github/workflows/deploy.yml
-git commit -m "Add GitHub Actions CI/CD workflow"
-git push origin main
+name: Deploy to Azure VM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/azureuser/Group_Stock_Portfolio
+
+            echo ">>> Pulling latest code..."
+            git pull origin main
+
+            echo ">>> Installing Python dependencies..."
+            source backend/venv/bin/activate
+            pip install -r backend/requirements.txt
+
+            echo ">>> Running Django migrations..."
+            cd backend
+            python manage.py migrate
+            python manage.py collectstatic --noinput
+            cd ..
+
+            echo ">>> Restarting Gunicorn..."
+            sudo systemctl restart gunicorn
+
+            echo ">>> Rebuilding frontend..."
+            cd frontend
+            npm install
+            npm run build
+            cd ..
+
+            echo ">>> Fixing permissions..."
+            sudo chmod -R o+rx frontend/dist
+            sudo chmod -R o+rx backend/staticfiles
+
+            echo ">>> Reloading Nginx..."
+            sudo systemctl reload nginx
+
+            echo ">>> Deployment complete!"
