@@ -5,29 +5,58 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { portfolioApi } from "../services/portfolioApi";
 
 const CHART_COLORS = ["#167c80", "#28b8b0", "#77c9e3", "#f2bf5e", "#ef6f6c", "#7b6ee6"];
+const RISK_COLORS = {
+  low: "#25b381",
+  medium: "#f2bf5e",
+  high: "#d16666",
+};
+
+function formatPercent(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "N/A";
+  }
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
+}
+
+function formatPrice(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "N/A";
+  }
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 2,
+  }).format(value);
+}
 
 export function PortfolioPage() {
   const navigate = useNavigate();
-  const [portfolios, setPortfolios] = useState([]);
-  const [sectors, setSectors] = useState([]);
-  const [selectedSector, setSelectedSector] = useState("");
-  const [selectedSectorCard, setSelectedSectorCard] = useState("");
-  const [newSectorName, setNewSectorName] = useState("");
-  const [showAddSectorInput, setShowAddSectorInput] = useState(false);
-  const [typeForm, setTypeForm] = useState({ name: "", description: "" });
+  const [groupedPortfolio, setGroupedPortfolio] = useState([]);
+  const [insights, setInsights] = useState({
+    risk_breakdown: { low: 0, medium: 0, high: 0 },
+    top_gainers: [],
+    top_losers: [],
+  });
   const [error, setError] = useState("");
 
   async function load() {
     try {
-      const [portfolioData, sectorData] = await Promise.all([
-        portfolioApi.listTypes(),
-        portfolioApi.listSectors(),
+      const [groupedData, insightsData] = await Promise.all([
+        portfolioApi.groupedSectorPortfolio(),
+        portfolioApi.portfolioInsights(),
       ]);
-      setPortfolios(portfolioData);
-      setSectors(sectorData);
+      setGroupedPortfolio(Array.isArray(groupedData) ? groupedData : []);
+      setInsights(
+        insightsData || {
+          risk_breakdown: { low: 0, medium: 0, high: 0 },
+          top_gainers: [],
+          top_losers: [],
+        },
+      );
       setError("");
     } catch (err) {
       setError(err.message);
+      setGroupedPortfolio([]);
     }
   }
 
@@ -36,27 +65,32 @@ export function PortfolioPage() {
   }, []);
 
   const chartData = useMemo(() => {
-    const buckets = portfolios.reduce((accumulator, portfolio) => {
-      const key = portfolio.sector_name || "Unassigned";
-      accumulator[key] = (accumulator[key] || 0) + 1;
-      return accumulator;
-    }, {});
-
-    const total = portfolios.length || 1;
-    return Object.entries(buckets).map(([name, value]) => ({
-      name,
-      value,
-      percentage: Math.round((value / total) * 100),
+    const total = groupedPortfolio.reduce((sum, group) => sum + group.items.length, 0) || 1;
+    return groupedPortfolio.map((group) => ({
+      name: group.sector.name,
+      value: group.items.length,
+      percentage: Math.round((group.items.length / total) * 100),
     }));
-  }, [portfolios]);
+  }, [groupedPortfolio]);
 
-  const sectorPortfolioCounts = useMemo(() => {
-    return portfolios.reduce((accumulator, portfolio) => {
-      const key = portfolio.sector_name || "Unassigned";
-      accumulator[key] = (accumulator[key] || 0) + 1;
-      return accumulator;
-    }, {});
-  }, [portfolios]);
+  const sectorCards = useMemo(
+    () => groupedPortfolio.map((group) => ({
+      id: group.sector.id,
+      name: group.sector.name,
+      market: group.sector.market,
+      count: group.items.length,
+    })),
+    [groupedPortfolio],
+  );
+
+  const riskItems = useMemo(
+    () => [
+      { key: "low", label: "Low Risk", value: insights.risk_breakdown?.low || 0 },
+      { key: "medium", label: "Medium Risk", value: insights.risk_breakdown?.medium || 0 },
+      { key: "high", label: "High Risk", value: insights.risk_breakdown?.high || 0 },
+    ],
+    [insights],
+  );
 
   return (
     <>
@@ -65,12 +99,14 @@ export function PortfolioPage() {
           <div>
             <p className="muted" style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.18em", fontSize: 12 }}>Portfolio Studio</p>
             <h1 style={{ marginBottom: 6 }}>Portfolio Management</h1>
-            <p className="muted" style={{ margin: 0 }}>Navigate your portfolio structure by sector first, then drill down into portfolios and stocks.</p>
+            <p className="muted" style={{ margin: 0 }}>
+              Stocks added from the Stocks Browser are grouped automatically into sectors here.
+            </p>
           </div>
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <button
               type="button"
-              onClick={() => navigate("/recommendations")}
+              onClick={() => navigate("/stocks")}
               style={{
                 minWidth: 220,
                 padding: "16px 18px",
@@ -81,8 +117,8 @@ export function PortfolioPage() {
                 textAlign: "left",
               }}
             >
-              <p className="muted" style={{ margin: 0 }}>Recommendations</p>
-              <p style={{ margin: "6px 0 0", fontSize: 18, fontWeight: 700 }}>View Stocks</p>
+              <p className="muted" style={{ margin: 0 }}>Stocks Browser</p>
+              <p style={{ margin: "6px 0 0", fontSize: 18, fontWeight: 700 }}>Add More Stocks</p>
             </button>
             <div
               style={{
@@ -94,111 +130,14 @@ export function PortfolioPage() {
               }}
             >
               <p className="muted" style={{ margin: 0 }}>Sectors</p>
-              <p style={{ margin: "6px 0 0", fontSize: 32, fontWeight: 700 }}>{sectors.length}</p>
+              <p style={{ margin: "6px 0 0", fontSize: 32, fontWeight: 700 }}>{sectorCards.length}</p>
             </div>
           </div>
         </div>
-        {error && <p>{error}</p>}
+        {error ? <p>{error}</p> : null}
       </section>
 
       <section className="grid two">
-        <div className="panel">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-            <div>
-              <h3 style={{ margin: 0 }}>Create Portfolio Type</h3>
-              <p className="muted" style={{ margin: "8px 0 0" }}>Select a sector first so the portfolio is automatically grouped in the right hierarchy.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowAddSectorInput((current) => !current)}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 14,
-                border: "1px solid rgba(17, 75, 95, 0.12)",
-                background: "rgba(255, 255, 255, 0.72)",
-                cursor: "pointer",
-              }}
-            >
-              {showAddSectorInput ? "Close Sector" : "Add Sector"}
-            </button>
-          </div>
-
-          <form className="form" onSubmit={async (e) => {
-            e.preventDefault();
-            await portfolioApi.createType({
-              ...typeForm,
-              sector: selectedSector ? Number(selectedSector) : null,
-            });
-            setTypeForm({ name: "", description: "" });
-            setSelectedSector("");
-            setNewSectorName("");
-            setShowAddSectorInput(false);
-            load();
-          }}>
-            <div style={{ display: "grid", gap: 10 }}>
-              <label className="muted" htmlFor="portfolio-name" style={{ fontSize: 13 }}>Portfolio Name</label>
-              <input id="portfolio-name" placeholder="Name" value={typeForm.name} onChange={(e) => setTypeForm({ ...typeForm, name: e.target.value })} />
-            </div>
-
-            <div style={{ display: "grid", gap: 10 }}>
-              <label className="muted" htmlFor="portfolio-sector" style={{ fontSize: 13 }}>Sector</label>
-              <select id="portfolio-sector" value={selectedSector} onChange={(e) => setSelectedSector(e.target.value)}>
-                <option value="">Select sector</option>
-                {sectors.map((sector) => <option key={sector.id} value={sector.id}>{sector.name}</option>)}
-              </select>
-            </div>
-
-            {showAddSectorInput && (
-              <div
-                style={{
-                  padding: 18,
-                  borderRadius: 18,
-                  background: "rgba(17, 75, 95, 0.04)",
-                  border: "1px dashed rgba(17, 75, 95, 0.16)",
-                }}
-              >
-                <div className="flex flex-col gap-3 md:flex-row" style={{ alignItems: "end" }}>
-                  <div style={{ flex: 1, display: "grid", gap: 10 }}>
-                    <label className="muted" htmlFor="new-sector-name" style={{ fontSize: 13 }}>New Sector</label>
-                    <input
-                      id="new-sector-name"
-                      placeholder="New sector name"
-                      value={newSectorName}
-                      onChange={(e) => setNewSectorName(e.target.value)}
-                    />
-                  </div>
-                  <button
-                    className="btn"
-                    type="button"
-                    style={{ minWidth: 140 }}
-                    onClick={async () => {
-                      const trimmedName = newSectorName.trim();
-                      if (!trimmedName) {
-                        return;
-                      }
-                      const createdSector = await portfolioApi.createSector({ name: trimmedName });
-                      const sectorData = await portfolioApi.listSectors();
-                      setSectors(sectorData);
-                      setSelectedSector(String(createdSector.id));
-                      setNewSectorName("");
-                      setShowAddSectorInput(false);
-                    }}
-                  >
-                    Save Sector
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div style={{ display: "grid", gap: 10 }}>
-              <label className="muted" htmlFor="portfolio-description" style={{ fontSize: 13 }}>Description</label>
-              <input id="portfolio-description" placeholder="Description" value={typeForm.description} onChange={(e) => setTypeForm({ ...typeForm, description: e.target.value })} />
-            </div>
-
-            <button className="btn" type="submit">Create Type</button>
-          </form>
-        </div>
-
         <div className="panel">
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap", marginBottom: 12 }}>
             <div>
@@ -217,7 +156,7 @@ export function PortfolioPage() {
                         <Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="#ffffff" strokeWidth={3} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value, _name, entry) => [`${value} portfolios`, entry.payload.name]} />
+                    <Tooltip formatter={(value, _name, entry) => [`${value} stocks`, entry.payload.name]} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -245,26 +184,131 @@ export function PortfolioPage() {
                 padding: 24,
               }}
             >
-              <p className="muted" style={{ margin: 0 }}>Create portfolios to generate analysis.</p>
+              <p className="muted" style={{ margin: 0 }}>Add stocks from the Stocks page to generate analysis.</p>
             </div>
           )}
+        </div>
+
+        <div className="panel">
+          <div style={{ marginBottom: 16 }}>
+            <h3 style={{ margin: 0 }}>Risk Breakdown + Top Movers</h3>
+            <p className="muted" style={{ margin: "8px 0 0" }}>
+              Quick read on stability and the stocks currently moving your portfolio the most.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gap: 14 }}>
+            {riskItems.map((item) => (
+              <div
+                key={item.key}
+                style={{
+                  padding: "14px 16px",
+                  borderRadius: 16,
+                  background: "rgba(255, 255, 255, 0.72)",
+                  border: "1px solid rgba(17, 75, 95, 0.08)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ width: 12, height: 12, borderRadius: 999, background: RISK_COLORS[item.key] }} />
+                  <span>{item.label}</span>
+                </div>
+                <strong>{item.value}</strong>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: "grid", gap: 18, marginTop: 20 }}>
+            <div>
+              <h4 style={{ margin: "0 0 10px" }}>Top Gainers</h4>
+              {!insights.top_gainers?.length ? (
+                <p className="muted" style={{ margin: 0 }}>No mover data yet.</p>
+              ) : (
+                <div style={{ display: "grid", gap: 10 }}>
+                  {insights.top_gainers.map((item) => (
+                    <button
+                      key={`gainer-${item.entry_id}`}
+                      type="button"
+                      onClick={() => navigate(`/stock/${encodeURIComponent(item.symbol)}`)}
+                      style={{
+                        padding: "12px 14px",
+                        borderRadius: 14,
+                        background: "rgba(37, 179, 129, 0.08)",
+                        border: "1px solid rgba(37, 179, 129, 0.18)",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <div>
+                        <strong>{item.symbol}</strong>
+                        <p className="muted" style={{ margin: "6px 0 0" }}>{item.name}</p>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <strong style={{ color: "#25b381" }}>{formatPercent(item.change_pct)}</strong>
+                        <p className="muted" style={{ margin: "6px 0 0" }}>{formatPrice(item.current_price)}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h4 style={{ margin: "0 0 10px" }}>Top Losers</h4>
+              {!insights.top_losers?.length ? (
+                <p className="muted" style={{ margin: 0 }}>No mover data yet.</p>
+              ) : (
+                <div style={{ display: "grid", gap: 10 }}>
+                  {insights.top_losers.map((item) => (
+                    <button
+                      key={`loser-${item.entry_id}`}
+                      type="button"
+                      onClick={() => navigate(`/stock/${encodeURIComponent(item.symbol)}`)}
+                      style={{
+                        padding: "12px 14px",
+                        borderRadius: 14,
+                        background: "rgba(209, 102, 102, 0.08)",
+                        border: "1px solid rgba(209, 102, 102, 0.18)",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <div>
+                        <strong>{item.symbol}</strong>
+                        <p className="muted" style={{ margin: "6px 0 0" }}>{item.name}</p>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <strong style={{ color: "#d16666" }}>{formatPercent(item.change_pct)}</strong>
+                        <p className="muted" style={{ margin: "6px 0 0" }}>{formatPrice(item.current_price)}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
       <section className="panel">
         <h3>Sectors</h3>
-        {!sectors.length ? (
-          <p className="muted">No sectors created yet.</p>
+        {!sectorCards.length ? (
+          <p className="muted">No sectors added yet.</p>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
-            {sectors.map((sector) => (
+            {sectorCards.map((sector) => (
               <button
                 key={sector.id}
                 type="button"
-                onClick={() => {
-                  setSelectedSectorCard(sector.name);
-                  navigate(`/portfolio/sector/${encodeURIComponent(sector.name)}`);
-                }}
+                onClick={() => navigate(`/portfolio/sector/${encodeURIComponent(sector.name)}`)}
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
@@ -273,16 +317,18 @@ export function PortfolioPage() {
                   padding: "16px 18px",
                   borderRadius: 18,
                   border: "1px solid rgba(17, 75, 95, 0.08)",
-                  background: selectedSectorCard === sector.name ? "rgba(17, 75, 95, 0.07)" : "rgba(255, 255, 255, 0.72)",
+                  background: "rgba(255, 255, 255, 0.72)",
                   cursor: "pointer",
                   textAlign: "left",
                 }}
               >
                 <div>
                   <p style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{sector.name}</p>
-                  <p className="muted" style={{ margin: "6px 0 0" }}>{sectorPortfolioCounts[sector.name] || 0} portfolios</p>
+                  <p className="muted" style={{ margin: "6px 0 0" }}>
+                    {sector.count} stock{sector.count === 1 ? "" : "s"} · {sector.market}
+                  </p>
                 </div>
-                <span style={{ fontSize: 20 }}>→</span>
+                <span style={{ fontSize: 20 }}>&rarr;</span>
               </button>
             ))}
           </div>

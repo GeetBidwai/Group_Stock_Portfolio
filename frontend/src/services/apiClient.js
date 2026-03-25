@@ -21,6 +21,35 @@ export function clearTokens() {
   localStorage.removeItem("refreshToken");
 }
 
+function extractErrorMessage(errorBody) {
+  if (Array.isArray(errorBody) && errorBody.length) {
+    return String(errorBody[0]);
+  }
+  if (typeof errorBody === "string" && errorBody.trim()) {
+    return errorBody;
+  }
+  if (errorBody?.detail) {
+    return Array.isArray(errorBody.detail) ? String(errorBody.detail[0]) : errorBody.detail;
+  }
+  if (errorBody?.error) {
+    return errorBody.error;
+  }
+  if (Array.isArray(errorBody?.non_field_errors) && errorBody.non_field_errors.length) {
+    return String(errorBody.non_field_errors[0]);
+  }
+  if (errorBody && typeof errorBody === "object") {
+    for (const value of Object.values(errorBody)) {
+      if (Array.isArray(value) && value.length) {
+        return String(value[0]);
+      }
+      if (typeof value === "string" && value.trim()) {
+        return value;
+      }
+    }
+  }
+  return "Request failed";
+}
+
 async function request(path, options = {}, retry = true) {
   const tokens = getTokens();
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -48,7 +77,7 @@ async function request(path, options = {}, retry = true) {
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    throw new Error(errorBody.detail || errorBody.error || errorBody.non_field_errors?.[0] || "Request failed");
+    throw new Error(extractErrorMessage(errorBody));
   }
 
   if (response.status === 204) {

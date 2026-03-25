@@ -24,8 +24,10 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "apps.shared",
     "apps.auth_module",
+    "apps.auth_telegram",
     "apps.portfolio_module",
     "apps.stock_search_module",
+    "apps.stocks_module",
     "apps.analytics_module",
     "apps.comparison_module",
     "apps.risk_module",
@@ -129,10 +131,18 @@ SIMPLE_JWT = {
 
 MARKET_DATA_PROVIDER = os.getenv("MARKET_DATA_PROVIDER", "yfinance")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "")
 TELEGRAM_BOT_API_URL = os.getenv("TELEGRAM_BOT_API_URL", "https://api.telegram.org")
+TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
+TELEGRAM_SIGNUP_LINK_EXPIRY_SECONDS = int(os.getenv("TELEGRAM_SIGNUP_LINK_EXPIRY_SECONDS", "900"))
 TELEGRAM_OTP_EXPIRY_SECONDS = int(os.getenv("TELEGRAM_OTP_EXPIRY_SECONDS", "300"))
 TELEGRAM_OTP_RESEND_COOLDOWN_SECONDS = int(os.getenv("TELEGRAM_OTP_RESEND_COOLDOWN_SECONDS", "60"))
+OTP_VERIFIED_CACHE_SECONDS = int(os.getenv("OTP_VERIFIED_CACHE_SECONDS", "600"))
+PASSWORD_RESET_OTP_MAX_ATTEMPTS = int(os.getenv("PASSWORD_RESET_OTP_MAX_ATTEMPTS", "3"))
+PASSWORD_RESET_OTP_REQUEST_LIMIT_PER_HOUR = int(os.getenv("PASSWORD_RESET_OTP_REQUEST_LIMIT_PER_HOUR", "3"))
+PASSWORD_RESET_TOKEN_EXPIRY_SECONDS = int(os.getenv("PASSWORD_RESET_TOKEN_EXPIRY_SECONDS", "600"))
 AUTH_RESET_REQUIRE_OTP = os.getenv("AUTH_RESET_REQUIRE_OTP", "false").lower() == "true"
+TELEGRAM_AUTH_MAX_AGE_SECONDS = int(os.getenv("TELEGRAM_AUTH_MAX_AGE_SECONDS", "86400"))
 
 FEATURE_FLAGS = {
     "enable_portfolio": os.getenv("FF_ENABLE_PORTFOLIO", "true").lower() == "true",

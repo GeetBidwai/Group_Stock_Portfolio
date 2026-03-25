@@ -14,4 +14,7 @@ export const portfolioApi = {
   portfolioStockAnalytics: (portfolioId) => apiClient.get(`/portfolio/portfolio-stock-analytics?portfolio_id=${encodeURIComponent(portfolioId)}`),
   clustering: () => apiClient.get("/portfolio/clustering"),
   portfolioForecast: (payload) => apiClient.post("/stock/portfolio-forecast-next-day", payload),
+  groupedSectorPortfolio: () => apiClient.get("/portfolio/"),
+  portfolioInsights: () => apiClient.get("/portfolio/insights/"),
+  removeGroupedSectorEntry: (entryId) => apiClient.delete(`/portfolio/entries/${entryId}/`),
 };

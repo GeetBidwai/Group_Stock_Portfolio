@@ -5,18 +5,19 @@ import { authApi } from "../services/authApi";
 
 export function ForgotPasswordPage() {
   const navigate = useNavigate();
-  const [identifier, setIdentifier] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   async function handleSubmit(event) {
     event.preventDefault();
     try {
-      const data = await authApi.requestOtp({ identifier });
-      sessionStorage.setItem("resetIdentifier", identifier);
-      sessionStorage.setItem("otpRequired", String(data.otp_required !== false));
-      setMessage(data.message || "Password reset request created.");
-      navigate(data.otp_required === false ? "/reset-password" : "/verify-otp");
+      setError("");
+      setMessage("");
+      const data = await authApi.requestResetOtp({ mobile_number: mobileNumber });
+      sessionStorage.setItem("resetMobileNumber", data.mobile_number || mobileNumber);
+      setMessage(data.message || "OTP sent successfully.");
+      navigate("/verify-otp");
     } catch (err) {
       setError(err.message);
     }
@@ -26,8 +27,14 @@ export function ForgotPasswordPage() {
     <div className="page-shell grid" style={{ placeItems: "center" }}>
       <div className="panel" style={{ width: "min(460px, 100%)" }}>
         <h1>Forgot Password</h1>
+        <p className="muted">Enter your linked mobile number. Your OTP will be sent to your Telegram app.</p>
         <form className="form" onSubmit={handleSubmit}>
-          <input placeholder="Username, email, or Telegram username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
+          <input
+            inputMode="tel"
+            placeholder="Linked mobile number"
+            value={mobileNumber}
+            onChange={(e) => setMobileNumber(e.target.value)}
+          />
           {message && <p>{message}</p>}
           {error && <p>{error}</p>}
           <button className="btn" type="submit">Send Telegram OTP</button>

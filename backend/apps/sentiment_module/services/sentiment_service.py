@@ -3,6 +3,7 @@ import math
 from django.core.cache import cache
 
 from apps.sentiment_module.services.databricks_client import DatabricksSentimentClient
+from apps.sentiment_module.services.finbert_client import FinBERTSentimentClient
 from apps.sentiment_module.services.news_service import NewsService
 from apps.stock_search_module.models import StockReference
 
@@ -18,12 +19,20 @@ NEGATIVE_WORDS = {
 
 class SentimentService:
     def __init__(self):
+        self.finbert_client = FinBERTSentimentClient()
         self.databricks_client = DatabricksSentimentClient()
 
     def analyze_text(self, text: str) -> dict:
         normalized_text = (text or "").strip()
         if not normalized_text:
             return {"label": "Neutral", "score": 0.0, "source": "empty"}
+
+        try:
+            result = self.finbert_client.get_sentiment(normalized_text)
+            result["source"] = "finbert"
+            return result
+        except Exception:
+            pass
 
         try:
             result = self.databricks_client.get_sentiment(normalized_text)

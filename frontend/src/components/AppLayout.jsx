@@ -15,6 +15,7 @@ export function AppLayout() {
             <p className="muted">{user?.username}</p>
           </div>
           <NavLink to="/">Dashboard</NavLink>
+          <NavLink to="/stocks">Stocks</NavLink>
           <NavLink to="/portfolio">Portfolio</NavLink>
           <NavLink to="/compare">Compare Stocks</NavLink>
           <NavLink to="/risk">Risk</NavLink>

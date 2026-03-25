@@ -7,21 +7,18 @@ export function SectorPortfolioPage() {
   const navigate = useNavigate();
   const { sectorName } = useParams();
   const decodedSectorName = decodeURIComponent(sectorName);
-  const [portfolios, setPortfolios] = useState([]);
-  const [stocks, setStocks] = useState([]);
+  const [groupedPortfolio, setGroupedPortfolio] = useState([]);
+  const [removingEntryId, setRemovingEntryId] = useState(null);
   const [error, setError] = useState("");
 
   async function load() {
     try {
-      const [portfolioData, stockData] = await Promise.all([
-        portfolioApi.listTypes(),
-        portfolioApi.listStocks(),
-      ]);
-      setPortfolios(portfolioData);
-      setStocks(stockData);
+      const groupedData = await portfolioApi.groupedSectorPortfolio();
+      setGroupedPortfolio(Array.isArray(groupedData) ? groupedData : []);
       setError("");
     } catch (err) {
       setError(err.message);
+      setGroupedPortfolio([]);
     }
   }
 
@@ -29,17 +26,24 @@ export function SectorPortfolioPage() {
     load();
   }, []);
 
-  const stockCountByPortfolio = useMemo(() => {
-    return stocks.reduce((accumulator, stock) => {
-      accumulator[stock.portfolio_type] = (accumulator[stock.portfolio_type] || 0) + 1;
-      return accumulator;
-    }, {});
-  }, [stocks]);
-
-  const filteredPortfolios = useMemo(
-    () => portfolios.filter((portfolio) => (portfolio.sector_name || "Unassigned") === decodedSectorName),
-    [decodedSectorName, portfolios],
+  const sectorGroup = useMemo(
+    () => groupedPortfolio.find((group) => group.sector.name === decodedSectorName) || null,
+    [decodedSectorName, groupedPortfolio],
   );
+
+  async function handleRemove(event, entryId) {
+    event.stopPropagation();
+    try {
+      setRemovingEntryId(entryId);
+      setError("");
+      await portfolioApi.removeGroupedSectorEntry(entryId);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRemovingEntryId(null);
+    }
+  }
 
   return (
     <>
@@ -48,7 +52,7 @@ export function SectorPortfolioPage() {
           <div>
             <p className="muted" style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.18em", fontSize: 12 }}>Sector Level</p>
             <h1 style={{ marginBottom: 6 }}>{decodedSectorName}</h1>
-            <p className="muted" style={{ margin: 0 }}>Portfolios grouped under this sector.</p>
+            <p className="muted" style={{ margin: 0 }}>Click any stock to open the full detail view.</p>
           </div>
           <Link
             to="/portfolio"
@@ -59,27 +63,34 @@ export function SectorPortfolioPage() {
               background: "rgba(255, 255, 255, 0.72)",
             }}
           >
-            ← Back to Sectors
+            &larr; Back to Sectors
           </Link>
         </div>
-        {error && <p>{error}</p>}
+        {error ? <p>{error}</p> : null}
       </section>
 
       <section className="panel">
-        <h3>Portfolios</h3>
-        {!filteredPortfolios.length ? (
-          <p className="muted">No portfolios in this sector.</p>
+        <h3>Stocks</h3>
+        {!sectorGroup?.items?.length ? (
+          <p className="muted">No stocks added in this sector yet.</p>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
-            {filteredPortfolios.map((portfolio) => (
-              <button
-                key={portfolio.id}
-                type="button"
-                onClick={() => navigate(`/portfolio/${portfolio.id}`)}
+            {sectorGroup.items.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => navigate(`/stock/${encodeURIComponent(item.symbol)}`)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    navigate(`/stock/${encodeURIComponent(item.symbol)}`);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  alignItems: "center",
+                  alignItems: "flex-start",
                   gap: 16,
                   padding: "16px 18px",
                   borderRadius: 18,
@@ -90,13 +101,20 @@ export function SectorPortfolioPage() {
                 }}
               >
                 <div>
-                  <p style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
-                    {portfolio.name} <span className="muted" style={{ fontWeight: 400 }}>({stockCountByPortfolio[portfolio.id] || 0} stocks)</span>
-                  </p>
-                  <p className="muted" style={{ margin: "6px 0 0" }}>{portfolio.sector_name || decodedSectorName}</p>
+                  <p style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{item.symbol}</p>
+                  <p className="muted" style={{ margin: "6px 0 0" }}>{item.name}</p>
+                  <p className="muted" style={{ margin: "6px 0 0" }}>{item.exchange || "-"}</p>
                 </div>
-                <span style={{ fontSize: 20 }}>→</span>
-              </button>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={(event) => handleRemove(event, item.id)}
+                  disabled={removingEntryId === item.id}
+                  style={{ minWidth: 120 }}
+                >
+                  {removingEntryId === item.id ? "Removing..." : "Remove"}
+                </button>
+              </div>
             ))}
           </div>
         )}
