@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 
-import yfinance as yf
 from django.core.cache import cache
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
@@ -14,13 +13,29 @@ from apps.stocks_module.models import PortfolioEntry, Sector, Stock
 
 class StocksPricingService:
     CACHE_TIMEOUT_SECONDS = 900
-    MAX_WORKERS = 10
+    SECTOR_CACHE_TIMEOUT_SECONDS = 300
+    MAX_WORKERS = 4
 
     def get_stocks_with_prices(self, sector: Sector) -> list[dict]:
+        sector_cache_key = f"stocks-module:sector:{sector.id}:prices"
+        sector_cached = cache.get(sector_cache_key)
+        if sector_cached is not None:
+            return sector_cached
+
         stocks = list(sector.stocks.filter(is_active=True).order_by("symbol"))
-        with ThreadPoolExecutor(max_workers=self.MAX_WORKERS) as executor:
-            price_payloads = list(executor.map(lambda item: self._snapshot_for_stock(item, sector.market.code), stocks))
-        return price_payloads
+        if not stocks:
+            cache.set(sector_cache_key, [], self.SECTOR_CACHE_TIMEOUT_SECONDS)
+            return []
+
+        if len(stocks) == 1:
+            items = [self._snapshot_for_stock(stocks[0], sector.market.code)]
+        else:
+            worker_count = min(self.MAX_WORKERS, len(stocks))
+            with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                items = list(executor.map(lambda item: self._snapshot_for_stock(item, sector.market.code), stocks))
+
+        cache.set(sector_cache_key, items, self.SECTOR_CACHE_TIMEOUT_SECONDS)
+        return items
 
     def _snapshot_for_stock(self, stock: Stock, market_code: str) -> dict:
         cache_key = f"stocks-module:price:{market_code}:{stock.symbol}"
@@ -28,29 +43,17 @@ class StocksPricingService:
         if cached is not None:
             return cached
 
+        market_data = MarketDataService()
         try:
-            ticker_symbol = self._ticker_symbol(stock.symbol, market_code)
-            ticker = yf.Ticker(ticker_symbol)
-            info = ticker.fast_info or {}
+            snapshot = market_data.get_ticker_snapshot(self._ticker_symbol(stock.symbol, market_code))
         except Exception:
-            info = {}
+            snapshot = {}
 
-        current_price = None
-        currency = None
-        try:
-            current_price = info.get("lastPrice") or info.get("regularMarketPrice")
-            currency = info.get("currency")
-        except Exception:
-            current_price = None
-            currency = None
-
-        if current_price is None:
-            try:
-                history = ticker.history(period="5d", interval="1d")
-                if not history.empty and "Close" in history:
-                    current_price = float(history["Close"].dropna().iloc[-1])
-            except Exception:
-                current_price = None
+        current_price = snapshot.get("current_price")
+        currency = snapshot.get("currency")
+        history = snapshot.get("history") or []
+        if current_price is None and history:
+            current_price = history[-1].get("close")
 
         payload = {
             "id": stock.id,

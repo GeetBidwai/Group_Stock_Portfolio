@@ -4,9 +4,10 @@ from datetime import timedelta
 
 import numpy as np
 import pandas as pd
-import yfinance as yf
 from django.core.cache import cache
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
+
+from apps.shared.services.market_data_service import MarketDataService
 
 
 class BTCForecastAnalyticsService:
@@ -60,12 +61,15 @@ class BTCForecastAnalyticsService:
         return payload
 
     def fetch_btc_data(self) -> pd.DataFrame:
-        history = yf.Ticker(self.TICKER).history(period=f"{self.HISTORY_DAYS}d", interval="1d")
-        if history.empty:
+        history = MarketDataService().get_history(self.TICKER, period=f"{self.HISTORY_DAYS}d", interval="1d")
+        if not history:
             return pd.DataFrame(columns=["Date", "Close"])
-
-        data_frame = history.reset_index()[["Date", "Close"]].copy()
-        return data_frame
+        data_frame = pd.DataFrame(history)
+        if data_frame.empty:
+            return pd.DataFrame(columns=["Date", "Close"])
+        if "date" not in data_frame or "close" not in data_frame:
+            return pd.DataFrame(columns=["Date", "Close"])
+        return data_frame.rename(columns={"date": "Date", "close": "Close"})[["Date", "Close"]].copy()
 
     def preprocess_data(self, df: pd.DataFrame) -> pd.DataFrame:
         if df.empty:

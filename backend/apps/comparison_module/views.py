@@ -3,6 +3,7 @@ from rest_framework import response, views
 from apps.comparison_module.serializers import StockComparisonSerializer
 from apps.comparison_module.services import StockComparisonService
 from apps.portfolio_module.models import PortfolioStock
+from apps.stocks_module.models import PortfolioEntry
 
 
 class StockComparisonView(views.APIView):
@@ -30,15 +31,21 @@ class StockComparisonView(views.APIView):
 
 class PortfolioStockOptionsView(views.APIView):
     def get(self, request):
-        stocks = (
+        manual_portfolio_stocks = (
             PortfolioStock.objects.filter(user=request.user)
             .order_by("symbol", "company_name")
             .values("symbol", "company_name")
         )
+        grouped_portfolio_stocks = (
+            PortfolioEntry.objects.filter(user=request.user)
+            .select_related("stock")
+            .order_by("stock__symbol", "stock__name")
+            .values("stock__symbol", "stock__name")
+        )
 
         deduped = []
         seen = set()
-        for stock in stocks:
+        for stock in manual_portfolio_stocks:
             symbol = stock["symbol"].upper()
             if symbol in seen:
                 continue
@@ -46,5 +53,14 @@ class PortfolioStockOptionsView(views.APIView):
             deduped.append({
                 "symbol": symbol,
                 "name": stock["company_name"] or symbol,
+            })
+        for stock in grouped_portfolio_stocks:
+            symbol = stock["stock__symbol"].upper()
+            if symbol in seen:
+                continue
+            seen.add(symbol)
+            deduped.append({
+                "symbol": symbol,
+                "name": stock["stock__name"] or symbol,
             })
         return response.Response(deduped)
