@@ -30,7 +30,7 @@ export function LoginPage() {
           {error && <p>{error}</p>}
           <button className="btn" type="submit">Login</button>
         </form>
-        <p><Link to="/signup">Create account</Link> | <Link to="/forgot-password">Forgot password</Link></p>
+        <p><Link to="/signup">Create account</Link></p>
     </AuthShell>
   );
 }

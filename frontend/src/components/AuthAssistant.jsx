@@ -1,27 +1,13 @@
 import { useMemo, useState } from "react";
 
-const CHAT_ID_STEPS = [
-  "Open Telegram.",
-  "Search for @userinfobot.",
-  "Tap Start.",
-  "Copy the Chat ID shown.",
-  "Paste it into the app.",
-];
-
 const PAGE_HINTS = {
-  login: ["What should I enter here?", "I can't login", "I forgot my password"],
-  signup: ["What is Telegram Chat ID?", "What should I enter here?", "Signup is not working"],
-  forgotPassword: ["I didn't get OTP", "What is Telegram Chat ID?", "What should I enter here?"],
-  otpVerification: ["I didn't get OTP", "What should I enter here?", "OTP is not working"],
-  resetPassword: ["Passwords do not match", "What should I enter here?", "Reset password is not working"],
+  login: ["What should I enter here?", "I can't login", "Signup is not working"],
+  signup: ["What should I enter here?", "Signup is not working", "Do I need a phone number?"],
 };
 
 const PAGE_WELCOME = {
-  login: "I can help with login, forgot password, and common sign-in issues.",
-  signup: "I can guide you through each signup field, including phone number and Telegram Chat ID.",
-  forgotPassword: "I can help you request OTP using your phone number and Telegram Chat ID.",
-  otpVerification: "I can help you verify the Telegram OTP and move to password reset.",
-  resetPassword: "I can help you finish resetting your password safely.",
+  login: "I can help with login and common sign-in issues.",
+  signup: "I can guide you through each signup field.",
 };
 
 function buildSteps(title, steps, closing = "Tell me which step is failing if you want more help.") {
@@ -39,37 +25,6 @@ function answerForMessage(message, page) {
     return `${text.charAt(0).toUpperCase() + text.slice(1)}!\n\n${PAGE_WELCOME[page] || "I can help you complete the authentication steps on this page."}\n\nTell me which step you are on.`;
   }
 
-  if (text.includes("telegram") || text.includes("chat id")) {
-    return buildSteps(
-      "Your Telegram Chat ID is the unique number linked to your Telegram account.",
-      CHAT_ID_STEPS,
-      "Then paste that Chat ID into the app."
-    );
-  }
-
-  if (text.includes("otp") && (text.includes("didn't") || text.includes("not") || text.includes("receive") || text.includes("working"))) {
-    return buildSteps(
-      "Please check your Telegram app first.",
-      [
-        "Wait a few seconds and look for the message in Telegram.",
-        "Make sure the Telegram Chat ID you entered is correct.",
-        "Request the OTP again if needed.",
-        "Use the same phone number and Chat ID linked to your account.",
-      ]
-    );
-  }
-
-  if (text.includes("otp")) {
-    return buildSteps(
-      "OTP verification happens after you request password recovery.",
-      [
-        "Open Telegram and check the OTP message.",
-        "Enter the OTP exactly as received.",
-        "Submit it to continue to the reset password page.",
-      ]
-    );
-  }
-
   if (text.includes("password") && text.includes("match")) {
     return buildSteps(
       "Both password fields must be exactly the same.",
@@ -81,19 +36,6 @@ function answerForMessage(message, page) {
     );
   }
 
-  if (text.includes("forgot") || text.includes("reset")) {
-    return buildSteps(
-      "Use the Forgot Password flow to recover your account.",
-      [
-        "Enter the phone number linked to your account.",
-        "Enter the same Telegram Chat ID linked to your account.",
-        "Get the OTP from Telegram.",
-        "Verify the OTP.",
-        "Set your new password.",
-      ]
-    );
-  }
-
   if (text.includes("sign up") || text.includes("signup") || text.includes("register") || (page === "signup" && text.includes("not working"))) {
     return buildSteps(
       "For signup, please fill in all required details carefully.",
@@ -101,8 +43,7 @@ function answerForMessage(message, page) {
         "Enter your username and email.",
         "Set your password.",
         "Enter your first name and last name.",
-        "Enter your phone number.",
-        "Enter your Telegram Chat ID for OTP-based recovery.",
+        "Phone number is optional.",
       ],
       "If one field is failing, tell me which one."
     );
@@ -114,34 +55,25 @@ function answerForMessage(message, page) {
       [
         "Enter your username exactly as you created it.",
         "Enter your password carefully.",
-        "If you forgot the password, use Forgot Password instead.",
+        "If you still cannot sign in, verify that your account exists.",
       ]
     );
   }
 
   if (text.includes("what should i enter") || text.includes("what to enter") || text.includes("what should i do here")) {
     if (page === "login") {
-      return "On this page, enter your username and password. If you forgot the password, use Forgot Password.";
+      return "On this page, enter your username and password.";
     }
     if (page === "signup") {
-      return "On this page, enter username, email, password, first name, last name, phone number, and Telegram Chat ID.";
-    }
-    if (page === "forgotPassword") {
-      return "On this page, enter the phone number and Telegram Chat ID linked to your account.";
-    }
-    if (page === "otpVerification") {
-      return "On this page, enter the OTP sent to your Telegram app.";
-    }
-    if (page === "resetPassword") {
-      return "On this page, enter your new password and confirm it in the second field.";
+      return "On this page, enter username, email, password, first name, last name, and optionally a phone number.";
     }
   }
 
   if (text.includes("not working") || text.includes("failed") || text.includes("error")) {
-    return "Tell me exactly which step failed: login, signup, OTP verification, or reset password. I'll guide you from there.";
+    return "Tell me exactly which step failed: login or signup. I'll guide you from there.";
   }
 
-  return "I can help with login, signup, Telegram Chat ID, OTP verification, and password reset. Tell me which step you are on.";
+  return "I can help with login and signup. Tell me which step you are on.";
 }
 
 function RobotIllustration() {
