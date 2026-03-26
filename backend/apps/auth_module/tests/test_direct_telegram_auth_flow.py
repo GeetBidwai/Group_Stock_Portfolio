@@ -130,3 +130,26 @@ class DirectTelegramAuthFlowTests(TestCase):
         self.assertEqual(reset_response.status_code, 200, getattr(reset_response, "data", None))
         user.refresh_from_db()
         self.assertTrue(user.check_password("NewPass123!"))
+
+    @patch("apps.shared.services.telegram_notification_service.requests.post")
+    def test_request_otp_accepts_mobile_with_country_code_prefix(self, mocked_post):
+        user = User.objects.create_user(
+            username="countryprefixuser",
+            email="countryprefix@example.com",
+            password="OldPass123!",
+            phone_number="919322428116",
+            telegram_chat_id=6181873958,
+        )
+        user.profile.mobile_number = "919322428116"
+        user.profile.telegram_chat_id = "6181873958"
+        user.profile.save(update_fields=["mobile_number", "telegram_chat_id"])
+
+        response = self.client.post(
+            "/api/auth/request-otp",
+            {"phone_number": "9322428116", "telegram_chat_id": "6181873958"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200, getattr(response, "data", None))
+        self.assertEqual(response.data["phone_number"], "919322428116")
+        mocked_post.assert_called()

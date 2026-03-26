@@ -224,12 +224,25 @@ class PasswordResetService:
 
     def _find_user_by_mobile(self, mobile_number: str):
         normalized_mobile_number = self._normalize_mobile_number(mobile_number)
-        user = User.objects.filter(
+        direct_match = User.objects.filter(
             Q(phone_number__iexact=normalized_mobile_number) | Q(profile__mobile_number__iexact=normalized_mobile_number)
         ).first()
-        if not user:
-            raise ValidationError("User not found for this mobile number.")
-        return user
+        if direct_match:
+            return direct_match
+
+        # Handle formatting differences across environments (+91 / 91 / 0 prefix).
+        local_mobile_number = normalized_mobile_number[-10:] if len(normalized_mobile_number) >= 10 else normalized_mobile_number
+        if len(local_mobile_number) == 10:
+            candidates = User.objects.filter(
+                Q(phone_number__iendswith=local_mobile_number) | Q(profile__mobile_number__iendswith=local_mobile_number)
+            ).distinct()
+            count = candidates.count()
+            if count == 1:
+                return candidates.first()
+            if count > 1:
+                raise ValidationError("Multiple users matched this mobile number. Please contact support.")
+
+        raise ValidationError("User not found for this mobile number.")
 
     def _normalize_mobile_number(self, mobile_number: str) -> str:
         normalized_mobile_number = "".join(ch for ch in str(mobile_number or "") if ch.isdigit())
