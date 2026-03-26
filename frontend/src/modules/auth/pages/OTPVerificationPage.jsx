@@ -30,7 +30,7 @@ export function OTPVerificationPage() {
   }
 
   return (
-    <AuthShell panelClassName="auth-panel--compact">
+    <AuthShell panelClassName="auth-panel--compact" assistantPage="otpVerification">
         <h1>OTP Verification</h1>
         <p className="muted">Enter the OTP sent to your Telegram app.</p>
         {debugOtpPreview ? <p>Development OTP: <strong>{debugOtpPreview}</strong></p> : null}

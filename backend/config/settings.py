@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.recommendations_module",
     "apps.commodities_module",
     "apps.crypto_module",
+    "apps.assistant_module",
 ]
 
 MIDDLEWARE = [

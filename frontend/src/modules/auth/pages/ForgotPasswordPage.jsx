@@ -42,7 +42,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthShell>
+    <AuthShell assistantPage="forgotPassword">
         <h1>Forgot Password</h1>
         <p className="muted">Enter the phone number and Telegram Chat ID linked to your account. We will send the OTP to your Telegram bot chat.</p>
         <form className="form" onSubmit={handleSubmit}>

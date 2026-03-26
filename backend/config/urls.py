@@ -22,4 +22,5 @@ urlpatterns = [
     path("api/recommendations/", include("apps.recommendations_module.urls")),
     path("api/commodities/", include("apps.commodities_module.urls")),
     path("api/crypto/", include("apps.crypto_module.urls")),
+    path("api/assistant/", include("apps.assistant_module.urls")),
 ]

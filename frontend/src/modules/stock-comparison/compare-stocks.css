@@ -3,6 +3,11 @@
   gap: 20px;
 }
 
+.compare-dashboard > .panel:first-child {
+  position: relative;
+  z-index: 20;
+}
+
 .compare-toolbar {
   display: grid;
   gap: 16px;
@@ -87,7 +92,7 @@
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  z-index: 30;
+  z-index: 50;
   padding: 10px;
   border-radius: 20px;
   border: 1px solid rgba(23, 33, 33, 0.08);

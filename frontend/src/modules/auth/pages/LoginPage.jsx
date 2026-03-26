@@ -21,7 +21,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthShell panelClassName="auth-panel--compact">
+    <AuthShell panelClassName="auth-panel--compact" assistantPage="login">
         <h1>Login</h1>
         <p className="muted">Access the protected analytics workspace.</p>
         <form className="form" onSubmit={handleSubmit}>

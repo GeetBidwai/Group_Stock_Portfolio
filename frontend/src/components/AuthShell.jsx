@@ -1,6 +1,7 @@
 import { Logo } from "./Logo";
+import { AuthAssistant } from "./AuthAssistant";
 
-export function AuthShell({ children, panelClassName = "" }) {
+export function AuthShell({ children, panelClassName = "", assistantPage = "login" }) {
   const panelClasses = ["panel", "auth-panel", panelClassName].filter(Boolean).join(" ");
 
   return (
@@ -9,8 +10,11 @@ export function AuthShell({ children, panelClassName = "" }) {
         <Logo />
       </header>
       <div className="auth-content">
-        <div className={panelClasses}>
-          {children}
+        <div className="auth-stage">
+          <div className={panelClasses}>
+            {children}
+          </div>
+          <AuthAssistant page={assistantPage} />
         </div>
       </div>
     </div>

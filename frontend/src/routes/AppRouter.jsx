@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AppLayout } from "../components/AppLayout";
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -8,7 +8,6 @@ import { SignupPage } from "../modules/auth/pages/SignupPage";
 import { ForgotPasswordPage } from "../modules/auth/pages/ForgotPasswordPage";
 import { OTPVerificationPage } from "../modules/auth/pages/OTPVerificationPage";
 import { ResetPasswordPage } from "../modules/auth/pages/ResetPasswordPage";
-import { DashboardPage } from "../modules/dashboard/pages/DashboardPage";
 import { StocksPage } from "../modules/stocks";
 import { PortfolioPage } from "../modules/portfolio/pages/PortfolioPage";
 import { PortfolioAnalysisPage } from "../modules/portfolio/pages/PortfolioAnalysisPage";
@@ -50,7 +49,7 @@ export function AppRouter() {
         <Route path="/auth/reset-mpin" element={<Suspense fallback={<div className="page-shell">Loading...</div>}><ResetMPINPage /></Suspense>} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
-            <Route path="/" element={<DashboardPage />} />
+            <Route path="/" element={<Navigate to="/stocks" replace />} />
             <Route path="/stocks" element={<StocksPage />} />
             <Route path="/portfolio" element={<PortfolioPage />} />
             <Route path="/portfolio/analysis" element={<PortfolioAnalysisPage />} />

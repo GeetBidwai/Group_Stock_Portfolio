@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../modules/auth/hooks/useAuth";
 import { featureFlags } from "../utils/featureFlags";
 import { Logo } from "./Logo";
+import { PersonalAssistant } from "./PersonalAssistant";
 
 export function AppLayout() {
   const { logout, user } = useAuth();
@@ -15,7 +16,6 @@ export function AppLayout() {
             <Logo />
             <p className="muted">{user?.username}</p>
           </div>
-          <NavLink to="/">Dashboard</NavLink>
           <NavLink to="/stocks">Stocks</NavLink>
           <NavLink to="/portfolio">Portfolio</NavLink>
           <NavLink to="/compare">Compare Stocks</NavLink>
@@ -31,6 +31,7 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <PersonalAssistant />
     </div>
   );
 }

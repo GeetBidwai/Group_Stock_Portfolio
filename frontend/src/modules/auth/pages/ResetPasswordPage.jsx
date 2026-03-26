@@ -34,7 +34,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <AuthShell panelClassName="auth-panel--compact">
+    <AuthShell panelClassName="auth-panel--compact" assistantPage="resetPassword">
         <h1>Reset Password</h1>
         <p className="muted">Set a new password to finish recovering your account.</p>
         <form className="form" onSubmit={handleSubmit}>

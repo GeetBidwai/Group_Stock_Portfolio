@@ -38,7 +38,7 @@ export function SignupPage() {
   }
 
   return (
-    <AuthShell>
+    <AuthShell assistantPage="signup">
         <h1>Sign Up</h1>
         <p className="muted">Create your account with your phone number and Telegram Chat ID so OTP recovery works end to end.</p>
         <form className="form" onSubmit={handleSubmit}>
