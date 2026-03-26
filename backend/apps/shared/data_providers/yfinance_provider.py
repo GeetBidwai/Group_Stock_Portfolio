@@ -36,6 +36,7 @@ class YFinanceMarketDataProvider(MarketDataProvider):
         self.snapshot_cache_dir.mkdir(parents=True, exist_ok=True)
         self.history_cache_dir = cache_dir / "history"
         self.history_cache_dir.mkdir(parents=True, exist_ok=True)
+        self.bundled_history_cache_dir = Path(settings.BASE_DIR).parent / "data" / "yfinance-cache" / "history"
         try:
             yf.set_tz_cache_location(str(cache_dir))
         except Exception:
@@ -283,6 +284,14 @@ class YFinanceMarketDataProvider(MarketDataProvider):
             try:
                 if max_age_seconds is not None and (time() - path.stat().st_mtime) > max_age_seconds:
                     continue
+                return json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+        for candidate in self._candidate_symbols(symbol):
+            path = self.bundled_history_cache_dir / self._history_cache_path(candidate, period, interval).name
+            if not path.exists():
+                continue
+            try:
                 return json.loads(path.read_text(encoding="utf-8"))
             except Exception:
                 continue
