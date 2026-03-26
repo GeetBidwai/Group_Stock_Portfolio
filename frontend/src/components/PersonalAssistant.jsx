@@ -1,14 +1,7 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { apiClient } from "../services/apiClient";
 import { useAuth } from "../modules/auth/hooks/useAuth";
-
-const STARTER_PROMPTS = [
-  "What is in my portfolio?",
-  "How many stocks do I have?",
-  "What is my risk breakdown?",
-  "Compare my top stocks",
-];
 
 export function PersonalAssistant() {
   const { user } = useAuth();
@@ -22,8 +15,6 @@ export function PersonalAssistant() {
       content: `Hi ${user?.username || "there"}! I am your personal assistant. Ask me about your portfolio, comparison, risk, or forecasts.`,
     },
   ]);
-
-  const suggestions = useMemo(() => STARTER_PROMPTS, []);
 
   async function sendMessage(rawText) {
     const trimmed = rawText.trim();
@@ -111,19 +102,6 @@ export function PersonalAssistant() {
               </div>
             ))}
             {isLoading ? <div className="personal-assistant__typing">Thinking...</div> : null}
-          </div>
-
-          <div className="personal-assistant__suggestions">
-            {suggestions.map((suggestion) => (
-              <button
-                key={suggestion}
-                type="button"
-                className="personal-assistant__chip"
-                onClick={() => sendMessage(suggestion)}
-              >
-                {suggestion}
-              </button>
-            ))}
           </div>
 
           <form
