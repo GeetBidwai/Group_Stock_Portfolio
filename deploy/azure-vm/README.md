@@ -119,3 +119,12 @@ The command verifies:
 - the server can reach `api.telegram.org`
 - the bot token is valid via `getMe`
 - the deployed database has the expected phone number and Telegram chat ID for the user
+
+If the deployed database user exists but is missing the phone or Telegram mapping, use:
+
+```bash
+cd /opt/group_stock_project/backend
+python manage.py set_user_contact --username your_username --phone-number 9876543210 --telegram-chat-id 1092192986
+```
+
+This updates both `User` and `UserProfile` consistently.
