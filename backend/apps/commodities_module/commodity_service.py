@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import pandas as pd
 from django.core.cache import cache
 from sklearn.linear_model import LinearRegression
@@ -7,10 +9,19 @@ from sklearn.linear_model import LinearRegression
 from apps.shared.services.market_data_service import MarketDataService
 
 
+logger = logging.getLogger(__name__)
+
+
 class CommodityAnalyticsService:
     CACHE_TIMEOUT_SECONDS = 3600
     GOLD_TICKERS = ("GC=F", "XAUUSD=X", "GLD")
     SILVER_TICKERS = ("SI=F", "XAGUSD=X", "SLV")
+    HISTORY_VARIANTS = (
+        ("1y", "1d"),
+        ("6mo", "1d"),
+        ("3mo", "1d"),
+        ("1mo", "1d"),
+    )
 
     def __init__(self):
         self.market_data = MarketDataService()
@@ -26,7 +37,7 @@ class CommodityAnalyticsService:
             return data_frame
 
         frame = data_frame.copy()
-        frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
+        frame["date"] = pd.to_datetime(frame["date"], errors="coerce", utc=True).dt.tz_localize(None)
         for column in ["open", "close", "high", "low"]:
             frame[column] = pd.to_numeric(frame[column], errors="coerce")
         frame = frame.dropna(subset=["date", "open", "close", "high", "low"]).sort_values("date").reset_index(drop=True)
@@ -76,6 +87,7 @@ class CommodityAnalyticsService:
             gold_df = self.fetch_gold_data()
             silver_df = self.fetch_silver_data()
             if gold_df.empty or silver_df.empty:
+                logger.warning("Commodities correlation unavailable: gold_df=%s silver_df=%s", len(gold_df), len(silver_df))
                 return {"error": "Data unavailable"}
 
             gold_prices = [
@@ -93,6 +105,7 @@ class CommodityAnalyticsService:
                 "silver_prices": silver_prices,
             }
         except Exception:
+            logger.exception("Commodities correlation payload generation failed")
             payload = {"error": "Data unavailable"}
 
         if "error" not in payload:
@@ -102,13 +115,29 @@ class CommodityAnalyticsService:
     def _fetch_data(self, tickers: tuple[str, ...] | list[str] | str) -> pd.DataFrame:
         candidates = tickers if isinstance(tickers, (tuple, list)) else [tickers]
         for ticker in candidates:
-            try:
-                history = self.market_data.get_history(ticker, period="1y", interval="1d")
-            except Exception:
-                continue
-            data_frame = self.preprocess_data(pd.DataFrame(history))
-            if len(data_frame) >= 2:
-                return data_frame
+            for period, interval in self.HISTORY_VARIANTS:
+                try:
+                    history = self.market_data.get_history(ticker, period=period, interval=interval)
+                except Exception:
+                    logger.warning(
+                        "Commodity history fetch failed for %s (%s/%s)",
+                        ticker,
+                        period,
+                        interval,
+                        exc_info=True,
+                    )
+                    continue
+                data_frame = self.preprocess_data(pd.DataFrame(history))
+                if len(data_frame) >= 2:
+                    logger.info(
+                        "Commodity history loaded for %s using %s/%s (%s rows)",
+                        ticker,
+                        period,
+                        interval,
+                        len(data_frame),
+                    )
+                    return data_frame
+            logger.warning("Commodity ticker exhausted with insufficient data: %s", ticker)
         return pd.DataFrame()
 
     def _build_commodity_payload(self, name: str, fetcher) -> dict:
@@ -120,6 +149,7 @@ class CommodityAnalyticsService:
         try:
             data_frame = fetcher()
             if len(data_frame) < 2:
+                logger.warning("Commodity payload unavailable for %s due to insufficient rows: %s", name, len(data_frame))
                 return {"error": "Data unavailable"}
 
             prices = data_frame["close"]
@@ -150,6 +180,7 @@ class CommodityAnalyticsService:
                 "regression": regression,
             }
         except Exception:
+            logger.exception("Commodity payload generation failed for %s", name)
             payload = {"error": "Data unavailable"}
 
         if "error" not in payload:

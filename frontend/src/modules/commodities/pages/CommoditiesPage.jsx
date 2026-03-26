@@ -34,9 +34,9 @@ export function CommoditiesPage() {
     return <section className="panel"><p>Loading gold and silver analytics...</p></section>;
   }
 
-  if (result.gold?.error || result.silver?.error || result.correlation?.error) {
-    return <section className="panel"><p>Data unavailable</p></section>;
-  }
+  const hasGold = Boolean(result.gold && !result.gold.error);
+  const hasSilver = Boolean(result.silver && !result.silver.error);
+  const hasCorrelation = Boolean(result.correlation && !result.correlation.error);
 
   return (
     <>
@@ -45,9 +45,16 @@ export function CommoditiesPage() {
         <p className="muted">Track one-year price behavior, next-day linear estimates, and cross-commodity correlation.</p>
       </section>
       <div className="grid" style={{ marginTop: 20 }}>
-        <GoldSection data={result.gold} />
-        <SilverSection data={result.silver} />
-        <CorrelationSection data={result.correlation} />
+        {hasGold ? <GoldSection data={result.gold} /> : <section className="panel"><p>Gold data unavailable right now.</p></section>}
+        {hasSilver ? <SilverSection data={result.silver} /> : <section className="panel"><p>Silver data unavailable right now.</p></section>}
+        {hasCorrelation ? (
+          <CorrelationSection data={result.correlation} />
+        ) : (
+          <section className="panel"><p>Correlation data unavailable right now.</p></section>
+        )}
+        {!hasGold && !hasSilver && !hasCorrelation ? (
+          <section className="panel"><p>Data unavailable</p></section>
+        ) : null}
       </div>
     </>
   );
