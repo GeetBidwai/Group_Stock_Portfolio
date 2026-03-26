@@ -1,5 +1,13 @@
 import { API_BASE_URL } from "./apiBaseUrl";
 
+const AUTH_EXPIRED_EVENT = "auth:expired";
+
+function notifyAuthExpired() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+  }
+}
+
 function getTokens() {
   return {
     access: localStorage.getItem("accessToken"),
@@ -73,10 +81,18 @@ async function request(path, options = {}, retry = true) {
       return request(path, options, false);
     }
     clearTokens();
+    notifyAuthExpired();
+  } else if (response.status === 401 && !tokens.refresh) {
+    clearTokens();
+    notifyAuthExpired();
   }
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      clearTokens();
+      notifyAuthExpired();
+    }
     throw new Error(extractErrorMessage(errorBody));
   }
 
@@ -105,4 +121,5 @@ export const apiClient = {
     }),
   saveTokens,
   getTokens,
+  AUTH_EXPIRED_EVENT,
 };

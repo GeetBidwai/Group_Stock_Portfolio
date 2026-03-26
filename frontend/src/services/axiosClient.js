@@ -2,6 +2,14 @@ import axios from "axios";
 
 import { API_BASE_URL } from "./apiBaseUrl";
 
+const AUTH_EXPIRED_EVENT = "auth:expired";
+
+function notifyAuthExpired() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+  }
+}
+
 function getTokens() {
   return {
     access: localStorage.getItem("accessToken"),
@@ -51,8 +59,14 @@ axiosClient.interceptors.response.use(
         return axiosClient(originalRequest);
       } catch (refreshError) {
         clearTokens();
+        notifyAuthExpired();
         throw refreshError;
       }
+    }
+
+    if (error.response?.status === 401) {
+      clearTokens();
+      notifyAuthExpired();
     }
 
     throw error;

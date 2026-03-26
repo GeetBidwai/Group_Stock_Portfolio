@@ -18,6 +18,20 @@ export function AuthProvider({ children }) {
     authApi.me().then(setUser).catch(() => authApi.clearTokens()).finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    function handleAuthExpired() {
+      authApi.clearTokens();
+      setUser(null);
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener(apiClient.AUTH_EXPIRED_EVENT, handleAuthExpired);
+      return () => window.removeEventListener(apiClient.AUTH_EXPIRED_EVENT, handleAuthExpired);
+    }
+
+    return undefined;
+  }, []);
+
   async function login(credentials) {
     const data = await authApi.login(credentials);
     apiClient.saveTokens(data);
