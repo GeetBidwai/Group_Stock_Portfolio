@@ -30,6 +30,8 @@ jobs:
             echo ">>> Running Django migrations..."
             cd backend
             python manage.py migrate
+            echo ">>> Seeding full stocks catalog from workbook..."
+            python manage.py seed_stocks_catalog --path /home/azureuser/Group_Stock_Portfolio/backend/data/Global_400_Stocks_Database.xlsx
             python manage.py collectstatic --noinput
             cd ..
 

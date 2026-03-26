@@ -71,7 +71,9 @@ class Command(BaseCommand):
                 if row.market_code == "IN":
                     target_sector_name = map_india_sector(row.source_sector, row.symbol)
                     if not target_sector_name:
-                        continue
+                        # Keep rows even when a source sector is not in the Nifty mapping.
+                        # This avoids silently dropping valid symbols such as "Capital Goods".
+                        target_sector_name = row.source_sector
                 else:
                     target_sector_name = row.source_sector
 
