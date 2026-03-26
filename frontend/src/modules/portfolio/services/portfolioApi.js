@@ -8,6 +8,7 @@ export const portfolioApi = {
   listSectors: () => apiClient.get("/sectors/"),
   createSector: (payload) => apiClient.post("/sectors/", payload),
   listStocks: () => apiClient.get("/portfolio-stocks/"),
+  listStockOptions: () => apiClient.get("/portfolio/stocks/"),
   addStock: (payload) => apiClient.post("/portfolio-stocks/", payload),
   deleteStock: (id) => apiClient.delete(`/portfolio-stocks/${id}`),
   peComparison: () => apiClient.get("/portfolio/pe-comparison"),

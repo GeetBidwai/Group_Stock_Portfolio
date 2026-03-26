@@ -13,11 +13,21 @@ export function ForecastPage() {
   useEffect(() => {
     async function loadPortfolioStocks() {
       try {
-        const stocks = await portfolioApi.listStocks();
-        setPortfolioStocks(stocks);
+        const unifiedStocks = await portfolioApi.listStockOptions();
+        setPortfolioStocks(Array.isArray(unifiedStocks) ? unifiedStocks : []);
         setPageError("");
-      } catch (err) {
-        setPageError(err.message);
+      } catch (unifiedErr) {
+        try {
+          const legacyStocks = await portfolioApi.listStocks();
+          const normalized = (Array.isArray(legacyStocks) ? legacyStocks : []).map((stock) => ({
+            symbol: stock.symbol,
+            name: stock.company_name || stock.symbol,
+          }));
+          setPortfolioStocks(normalized);
+          setPageError("");
+        } catch (legacyErr) {
+          setPageError(legacyErr.message || unifiedErr.message);
+        }
       }
     }
 
@@ -36,7 +46,7 @@ export function ForecastPage() {
       })
       .map((stock) => ({
         symbol: stock.symbol,
-        name: stock.company_name || stock.symbol,
+        name: stock.name || stock.company_name || stock.symbol,
       }));
   }, [portfolioStocks]);
 

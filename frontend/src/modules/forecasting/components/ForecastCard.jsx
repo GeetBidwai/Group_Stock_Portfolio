@@ -4,9 +4,13 @@ import { StockAutocomplete } from "../../portfolio/components/StockAutocomplete"
 import { ModelToggle } from "./ModelToggle";
 import { TimeHorizonSelector } from "./TimeHorizonSelector";
 
-function PortfolioSymbolAutocomplete({ options, value, onChange, onSelect, placeholder }) {
+function PortfolioSymbolAutocomplete({ options, value, onChange, onSelect, placeholder, onOpenChange }) {
   const containerRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   useEffect(() => {
     function handleOutsideClick(event) {
@@ -83,6 +87,7 @@ export function ForecastCard({
   const [horizon, setHorizon] = useState("3M");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isPortfolioDropdownOpen, setIsPortfolioDropdownOpen] = useState(false);
 
   const canSubmit = Boolean(selectedStock?.symbol && model);
 
@@ -106,7 +111,7 @@ export function ForecastCard({
   }
 
   return (
-    <section className="panel">
+    <section className={`panel${isPortfolioDropdownOpen ? " forecast-card--elevated" : ""}`}>
       <div style={{ marginBottom: 18 }}>
         <p className="muted" style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.18em", fontSize: 12 }}>Forecast Module</p>
         <h2 style={{ margin: "10px 0 6px" }}>{title}</h2>
@@ -128,6 +133,7 @@ export function ForecastCard({
               }}
               onSelect={setSelectedStock}
               placeholder="Select a stock from your portfolio"
+              onOpenChange={setIsPortfolioDropdownOpen}
             />
           ) : (
             <StockAutocomplete

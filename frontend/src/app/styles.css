@@ -237,6 +237,11 @@ select {
   color: var(--muted);
 }
 
+.forecast-card--elevated {
+  position: relative;
+  z-index: 30;
+}
+
 mark {
   padding: 0;
   background: rgba(26, 147, 111, 0.18);
