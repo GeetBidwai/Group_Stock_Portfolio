@@ -102,3 +102,20 @@ sudo journalctl -u group-stock-backend -f
 sudo nginx -t
 sudo systemctl reload nginx
 ```
+
+## Telegram OTP Diagnostics
+
+Use the backend management command below on the VM to verify the exact production OTP prerequisites before changing code:
+
+```bash
+cd /opt/group_stock_project/backend
+python manage.py check_telegram_otp
+python manage.py check_telegram_otp --phone-number 9876543210 --telegram-chat-id 1092192986
+```
+
+The command verifies:
+
+- `TELEGRAM_BOT_TOKEN` is loaded by Django
+- the server can reach `api.telegram.org`
+- the bot token is valid via `getMe`
+- the deployed database has the expected phone number and Telegram chat ID for the user
