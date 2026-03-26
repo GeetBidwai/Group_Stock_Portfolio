@@ -224,6 +224,12 @@ FF_ENABLE_FORECASTING=true
 FF_ENABLE_SENTIMENT=true
 FF_ENABLE_COMMODITIES=true
 FF_ENABLE_CRYPTO=true
+
+ASSISTANT_RAG_ENABLED=false
+GEMINI_API_KEY=
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3
+CHROMA_PERSIST_DIR=
 ```
 
 ### Environment Notes
@@ -235,6 +241,8 @@ FF_ENABLE_CRYPTO=true
 - Databricks sentiment is optional.
 - FinBERT support depends on `transformers` and `torch`, and may require model download or local cache availability.
 - Telegram-dependent flows require bot credentials and, for webhook verification, `TELEGRAM_WEBHOOK_SECRET`.
+- Assistant RAG is optional and feature-flagged. Keep `ASSISTANT_RAG_ENABLED=false` until Ollama and Gemini embedding access are configured.
+- `CHROMA_PERSIST_DIR` defaults to `backend/.chroma` when not provided.
 
 ## Stock Catalog Import
 
@@ -337,6 +345,8 @@ VITE_FF_ENABLE_CRYPTO=true
 - `GET /api/commodities/correlation/`
 - `GET /api/crypto/btcusd-hourly`
 - `GET /api/crypto/btc-forecast/?range=3m`
+- `POST /api/assistant/chat/`
+- `POST /api/assistant/reindex/` (admin only, optional for rebuilding assistant vector index)
 
 See [docs/API.md](docs/API.md) for the shorter endpoint reference.
 

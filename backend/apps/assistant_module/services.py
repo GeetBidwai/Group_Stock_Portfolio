@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import logging
 import re
 
 from apps.comparison_module.services import StockComparisonService
 from apps.forecasting_module.services import StockForecastingService
 from apps.portfolio_module.models import PortfolioStock
+from apps.assistant_module.rag.rag_pipeline import get_assistant_rag_pipeline
 from apps.stocks_module.models import PortfolioEntry, Stock
 from apps.stocks_module.services import StocksPortfolioService
+
+
+logger = logging.getLogger(__name__)
 
 
 class PersonalAssistantService:
@@ -14,7 +19,7 @@ class PersonalAssistantService:
 
     def reply(self, user, message: str, history: list[dict] | None = None) -> dict:
         cleaned_message = (message or "").strip()
-        self._sanitize_history(history or [])
+        sanitized_history = self._sanitize_history(history or [])
         holdings = self._portfolio_holdings(user)
 
         direct_reply = self._direct_reply(user, cleaned_message, holdings)
@@ -23,6 +28,10 @@ class PersonalAssistantService:
                 "reply": direct_reply,
                 "mode": "project_data",
             }
+
+        rag_reply = self._rag_reply(cleaned_message, sanitized_history)
+        if rag_reply:
+            return rag_reply
 
         return {
             "reply": self._default_reply(holdings),
@@ -279,3 +288,13 @@ class PersonalAssistantService:
         return (
             "I can help with your portfolio after login. Ask me about your holdings, sectors, comparison, risk, or forecast."
         )
+
+    def _rag_reply(self, message: str, history: list[dict]) -> dict | None:
+        if not message:
+            return None
+        try:
+            rag_pipeline = get_assistant_rag_pipeline()
+            return rag_pipeline.ask(message=message, history=history)
+        except Exception:
+            logger.exception("Assistant RAG pipeline failed; falling back to deterministic assistant.")
+            return None

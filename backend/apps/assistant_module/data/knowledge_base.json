@@ -1,0 +1,86 @@
+[
+  {
+    "id": "overview-1",
+    "title": "Project Overview",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Stock Analytics Platform is a modular web app built with Django REST Framework and React. It supports authenticated user flows for stock exploration, portfolio tracking, comparisons, risk analysis, forecasting, sentiment insights, commodities analytics, and BTC forecasting. The assistant is a read-only support layer that should guide users using project-grounded information."
+  },
+  {
+    "id": "feature-stocks",
+    "title": "Stocks Browser",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "The stocks module allows users to pick market and sector, then view sector stocks and live prices. It depends on catalog data seeded in PostgreSQL. If catalog seed data is missing on a server, sectors and stock lists can appear limited or unavailable. Stock catalog import can be done with seed_stocks_catalog management command."
+  },
+  {
+    "id": "feature-portfolio",
+    "title": "Portfolio Features",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Users can add and remove portfolio holdings and view risk and performance insights. Portfolio-related flows use authenticated endpoints and user-specific data. Comparison and portfolio forecast selectors rely on the portfolio stock list being available from backend APIs."
+  },
+  {
+    "id": "feature-compare",
+    "title": "Compare Stocks Module",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Compare Stocks is intended to compare two stocks from the logged-in user's portfolio. Dropdown options are fetched from portfolio-backed APIs, and the comparison chart should render normalized return series for selected symbols over a chosen range."
+  },
+  {
+    "id": "feature-forecast",
+    "title": "Forecast Module",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Forecast module supports stock forecasting based on selected symbol, model, and horizon. Portfolio forecast option should list portfolio holdings. If no portfolio stocks are found, users may see empty selector states. Forecasting also depends on historical market data availability."
+  },
+  {
+    "id": "feature-commodities",
+    "title": "Gold and Silver Analytics",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Commodities module fetches gold and silver time series and computes current price, prediction, and correlation. Upstream market data can intermittently fail, so fallback tickers and caching are used for reliability. If data providers fail consistently, UI should show a graceful data unavailable state."
+  },
+  {
+    "id": "feature-sentiment",
+    "title": "Sentiment and Recommendations",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Sentiment module aggregates finance news and computes sentiment scoring, and recommendations are generated from combined signals. External provider limits or missing API keys can reduce data availability. The application should handle these failures gracefully without crashing."
+  },
+  {
+    "id": "feature-crypto",
+    "title": "BTC Forecast Feature",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Crypto module exposes BTC/USD hourly and range-based forecast views. Availability depends on external market data responses and forecasting pipeline readiness."
+  },
+  {
+    "id": "auth-login",
+    "title": "Authentication Basics",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Login uses username/password and JWT-based authentication. The frontend sends access tokens and refreshes when needed. If tokens expire or become invalid, API requests can fail with unauthorized responses until refresh or re-login happens."
+  },
+  {
+    "id": "auth-forgot",
+    "title": "Forgot Password with OTP",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Forgot-password flow in this project relies on mobile number and Telegram chat ID linkage. If a user is not found by the provided mobile value, request OTP fails. Environment configuration for Telegram services must be valid in server deployment."
+  },
+  {
+    "id": "faq-token",
+    "title": "FAQ: Given token not valid",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "If a protected page displays token validity errors, access token may be expired or missing. The expected recovery path is automatic refresh if refresh token exists, else re-login. This is an auth/session issue, not a commodities data issue."
+  },
+  {
+    "id": "faq-data-unavailable",
+    "title": "FAQ: Data unavailable on server only",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "When local works but server shows data unavailable, common causes include missing seed/catalog imports, missing environment variables, outbound network restrictions for live market sources, or stale deployment state. Compare API responses and logs between local and server to identify the failing layer."
+  },
+  {
+    "id": "faq-portfolio-mismatch",
+    "title": "FAQ: Portfolio mismatch between pages",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "If portfolio list appears on one page but not another selector, verify both frontend modules read from the same backend portfolio endpoint and symbol mapping format. Mismatched source endpoints or stale cached data can cause empty dropdowns."
+  },
+  {
+    "id": "api-summary",
+    "title": "Important API Groups",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Main API groups include auth, portfolio, stocks, comparison, risk, forecasting, sentiment, recommendations, commodities, crypto, and assistant. Assistant endpoint is POST /api/assistant/chat/. It should remain backward compatible for the existing frontend widget."
+  }
+]
