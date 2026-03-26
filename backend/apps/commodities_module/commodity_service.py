@@ -9,15 +9,17 @@ from apps.shared.services.market_data_service import MarketDataService
 
 class CommodityAnalyticsService:
     CACHE_TIMEOUT_SECONDS = 3600
+    GOLD_TICKERS = ("GC=F", "XAUUSD=X", "GLD")
+    SILVER_TICKERS = ("SI=F", "XAGUSD=X", "SLV")
 
     def __init__(self):
         self.market_data = MarketDataService()
 
     def fetch_gold_data(self) -> pd.DataFrame:
-        return self._fetch_data("GC=F")
+        return self._fetch_data(self.GOLD_TICKERS)
 
     def fetch_silver_data(self) -> pd.DataFrame:
-        return self._fetch_data("SI=F")
+        return self._fetch_data(self.SILVER_TICKERS)
 
     def preprocess_data(self, data_frame: pd.DataFrame) -> pd.DataFrame:
         if data_frame.empty:
@@ -93,13 +95,21 @@ class CommodityAnalyticsService:
         except Exception:
             payload = {"error": "Data unavailable"}
 
-        cache.set(cache_key, payload, self.CACHE_TIMEOUT_SECONDS)
+        if "error" not in payload:
+            cache.set(cache_key, payload, self.CACHE_TIMEOUT_SECONDS)
         return payload
 
-    def _fetch_data(self, ticker: str) -> pd.DataFrame:
-        history = self.market_data.get_history(ticker, period="1y", interval="1d")
-        data_frame = pd.DataFrame(history)
-        return self.preprocess_data(data_frame)
+    def _fetch_data(self, tickers: tuple[str, ...] | list[str] | str) -> pd.DataFrame:
+        candidates = tickers if isinstance(tickers, (tuple, list)) else [tickers]
+        for ticker in candidates:
+            try:
+                history = self.market_data.get_history(ticker, period="1y", interval="1d")
+            except Exception:
+                continue
+            data_frame = self.preprocess_data(pd.DataFrame(history))
+            if len(data_frame) >= 2:
+                return data_frame
+        return pd.DataFrame()
 
     def _build_commodity_payload(self, name: str, fetcher) -> dict:
         cache_key = f"commodities:{name}"
@@ -142,6 +152,7 @@ class CommodityAnalyticsService:
         except Exception:
             payload = {"error": "Data unavailable"}
 
-        cache.set(cache_key, payload, self.CACHE_TIMEOUT_SECONDS)
+        if "error" not in payload:
+            cache.set(cache_key, payload, self.CACHE_TIMEOUT_SECONDS)
         return payload
 
