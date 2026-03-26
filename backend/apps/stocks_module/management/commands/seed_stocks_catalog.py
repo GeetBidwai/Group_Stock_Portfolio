@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
@@ -10,16 +13,25 @@ class Command(BaseCommand):
     help = "Seed India and USA sectors/stocks into stocks_module from the provided workbook."
 
     def add_arguments(self, parser):
-        parser.add_argument("--path", required=True, help="Absolute path to the Excel workbook.")
+        parser.add_argument(
+            "--path",
+            help="Path to the Excel workbook. Falls back to STOCKS_CATALOG_WORKBOOK when omitted.",
+        )
         parser.add_argument(
             "--replace-existing",
             action="store_true",
             help="Replace existing stocks_module market/sector/stock catalog data before loading the workbook.",
         )
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Validate the workbook and report catalog changes without writing to the database.",
+        )
 
     def handle(self, *args, **options):
-        workbook_path = options["path"]
+        workbook_path = self._resolve_workbook_path(options.get("path"))
         replace_existing = options["replace_existing"]
+        dry_run = options["dry_run"]
         workbook_rows = parse_stock_workbook(workbook_path)
         if not workbook_rows:
             raise CommandError("No stock rows were parsed from the workbook.")
@@ -30,9 +42,10 @@ class Command(BaseCommand):
                     raise CommandError(
                         "Cannot replace catalog data while PortfolioEntry rows exist. Clear those entries first."
                     )
-                Stock.objects.all().delete()
-                Sector.objects.all().delete()
-                Market.objects.all().delete()
+                if not dry_run:
+                    Stock.objects.all().delete()
+                    Sector.objects.all().delete()
+                    Market.objects.all().delete()
 
             created_markets = 0
             created_sectors = 0
@@ -100,13 +113,14 @@ class Command(BaseCommand):
                 )
 
                 if stock is None:
-                    stock = Stock.objects.create(
-                        sector=sector,
-                        symbol=row.symbol,
-                        name=row.company_name,
-                        exchange=exchange,
-                        is_active=True,
-                    )
+                    if not dry_run:
+                        stock = Stock.objects.create(
+                            sector=sector,
+                            symbol=row.symbol,
+                            name=row.company_name,
+                            exchange=exchange,
+                            is_active=True,
+                        )
                     created_stocks += 1
                 else:
                     dirty_fields = []
@@ -123,20 +137,45 @@ class Command(BaseCommand):
                         stock.is_active = True
                         dirty_fields.append("is_active")
                     if dirty_fields:
-                        stock.save(update_fields=dirty_fields)
+                        if not dry_run:
+                            stock.save(update_fields=dirty_fields)
                         updated_stocks += 1
 
-                seen_stock_ids.add(stock.id)
+                if not dry_run and stock is not None:
+                    seen_stock_ids.add(stock.id)
 
-            if replace_existing:
+            if replace_existing and not dry_run:
                 Stock.objects.exclude(id__in=seen_stock_ids).update(is_active=False)
+
+            if dry_run:
+                transaction.set_rollback(True)
 
         self.stdout.write(
             self.style.SUCCESS(
-                "Seed complete. "
+                f"{'Dry run complete' if dry_run else 'Seed complete'}. "
+                f"Workbook: {workbook_path}. "
                 f"Markets: {created_markets}, "
                 f"Sectors: {created_sectors}, "
                 f"Stocks created: {created_stocks}, "
                 f"Stocks updated: {updated_stocks}"
             )
         )
+
+    def _resolve_workbook_path(self, cli_path: str | None) -> str:
+        configured_path = cli_path or getattr(settings, "STOCKS_CATALOG_WORKBOOK", "")
+        if not configured_path:
+            raise CommandError("Provide --path or configure STOCKS_CATALOG_WORKBOOK in the environment.")
+
+        candidate = Path(configured_path).expanduser()
+        if not candidate.is_absolute():
+            cwd_candidate = (Path.cwd() / candidate).resolve()
+            project_candidate = (Path(settings.BASE_DIR).parent / candidate).resolve()
+            candidate = cwd_candidate if cwd_candidate.exists() else project_candidate
+
+        if not candidate.exists():
+            raise CommandError(f"Workbook not found: {candidate}")
+
+        if candidate.suffix.lower() not in {".xlsx", ".xlsm"}:
+            raise CommandError(f"Unsupported workbook format: {candidate.suffix}")
+
+        return str(candidate)

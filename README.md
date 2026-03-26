@@ -139,7 +139,8 @@ python manage.py migrate
 
 ```bash
 python manage.py seed_stocks
-python manage.py seed_stocks_catalog
+python manage.py seed_stocks_catalog --dry-run --path ../data/Global_400_Stocks_Database.xlsx
+python manage.py seed_stocks_catalog --path ../data/Global_400_Stocks_Database.xlsx
 python manage.py update_risk
 ```
 
@@ -190,6 +191,7 @@ JWT_ACCESS_MINUTES=30
 JWT_REFRESH_DAYS=7
 
 MARKET_DATA_PROVIDER=yfinance
+STOCKS_CATALOG_WORKBOOK=
 
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_BOT_USERNAME=
@@ -228,10 +230,27 @@ FF_ENABLE_CRYPTO=true
 
 - `DB_ENGINE=postgres` is the main runtime path.
 - `DB_ENGINE=sqlite` uses `backend/db.sqlite3`.
+- `STOCKS_CATALOG_WORKBOOK` is optional and can point to the 400-stock workbook so `seed_stocks_catalog` can run without passing `--path` every time.
 - `NEWSAPI_KEY` is optional. The sentiment module falls back to Yahoo RSS and Google News RSS.
 - Databricks sentiment is optional.
 - FinBERT support depends on `transformers` and `torch`, and may require model download or local cache availability.
 - Telegram-dependent flows require bot credentials and, for webhook verification, `TELEGRAM_WEBHOOK_SECRET`.
+
+## Stock Catalog Import
+
+- The deployed stocks browser reads `Market`, `Sector`, and `Stock` rows from PostgreSQL.
+- The bundled migration seeds only a small default catalog for India and USA.
+- The 400-stock workbook must be imported once per environment to load the full catalog.
+
+```bash
+cd backend
+python manage.py seed_stocks_catalog --dry-run --path ../data/Global_400_Stocks_Database.xlsx
+python manage.py seed_stocks_catalog --path ../data/Global_400_Stocks_Database.xlsx
+```
+
+- `--dry-run` validates the workbook and reports how many rows would be created or updated without changing the database.
+- `--replace-existing` is destructive and should be avoided unless you intentionally want to rebuild the catalog from scratch.
+- If `STOCKS_CATALOG_WORKBOOK` is set in `backend/.env`, you can omit `--path`.
 
 ## Frontend Environment Variables
 
@@ -346,7 +365,8 @@ cd backend
 python manage.py migrate
 python manage.py runserver
 python manage.py seed_stocks
-python manage.py seed_stocks_catalog
+python manage.py seed_stocks_catalog --dry-run --path ../data/Global_400_Stocks_Database.xlsx
+python manage.py seed_stocks_catalog --path ../data/Global_400_Stocks_Database.xlsx
 python manage.py update_risk
 python manage.py test
 ```
