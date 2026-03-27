@@ -35,12 +35,15 @@ export function CorrelationSection({ data }) {
             <XAxis dataKey="label" minTickGap={28} tick={{ fill: "#5f6b6d", fontSize: 12 }} />
             <YAxis yAxisId="gold" tick={{ fill: "#b58900", fontSize: 12 }} />
             <YAxis yAxisId="silver" orientation="right" tick={{ fill: "#7c7f85", fontSize: 12 }} />
-            <Tooltip />
+            <Tooltip formatter={(value, name) => [`Rs ${Number(value).toLocaleString("en-IN")}`, name]} />
             <Line yAxisId="gold" type="monotone" dataKey="gold" name="Gold" stroke="#b58900" dot={false} strokeWidth={2.5} />
             <Line yAxisId="silver" type="monotone" dataKey="silver" name="Silver" stroke="#7c7f85" dot={false} strokeWidth={2.5} />
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <p className="muted" style={{ marginTop: 12, marginBottom: 0, fontSize: 12 }}>
+        Source: {data.source}. Gold is shown in Rs / 10 gm and silver in Rs / kg.
+      </p>
     </section>
   );
 }
