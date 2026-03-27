@@ -77,7 +77,7 @@ export function ForecastPage() {
         {pageError && <p style={{ color: "#c05353", marginTop: 14, marginBottom: 0 }}>{pageError}</p>}
       </section>
 
-      <section className="grid" style={{ marginTop: 20 }}>
+      <section className="grid two" style={{ marginTop: 20 }}>
         <ForecastCard
           title="Forecast from Portfolio"
           description="Choose a stock you already hold, select the model and horizon, then generate a forecast."

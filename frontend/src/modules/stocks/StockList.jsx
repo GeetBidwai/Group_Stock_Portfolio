@@ -26,8 +26,8 @@ export function StockList({ loading, sector, items, pendingStockId, onAddToPortf
       ) : !items.length ? (
         <p className="muted" style={{ margin: 0 }}>No stocks available for the selected sector.</p>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table className="table">
+        <div className="chart-panel" style={{ overflowX: "auto" }}>
+          <table className="table fin-table">
             <thead>
               <tr>
                 <th>Symbol</th>
@@ -49,17 +49,14 @@ export function StockList({ loading, sector, items, pendingStockId, onAddToPortf
                       type="button"
                       onClick={() => onAddToPortfolio(item.id)}
                       disabled={pendingStockId === item.id}
+                      className="btn"
                       style={{
                         width: 40,
                         height: 40,
-                        borderRadius: 12,
-                        border: "1px solid rgba(17, 75, 95, 0.12)",
-                        background: "linear-gradient(135deg, rgba(17, 75, 95, 0.95), rgba(26, 147, 111, 0.95))",
-                        color: "#ffffff",
                         fontSize: 24,
                         lineHeight: 1,
-                        cursor: "pointer",
                         opacity: pendingStockId === item.id ? 0.7 : 1,
+                        padding: 0,
                       }}
                       aria-label={`Add ${item.symbol} to portfolio`}
                     >

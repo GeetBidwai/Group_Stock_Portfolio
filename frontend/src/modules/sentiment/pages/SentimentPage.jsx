@@ -99,7 +99,7 @@ export function SentimentPage() {
 
       {result && (
         <>
-          <div style={{ marginTop: 18 }}>
+          <div className="page-section" style={{ marginTop: 18 }}>
             <SentimentSummaryCard result={result} />
           </div>
 

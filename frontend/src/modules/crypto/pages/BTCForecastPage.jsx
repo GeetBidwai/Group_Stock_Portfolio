@@ -92,19 +92,8 @@ export function BTCForecastPage() {
             <button
               key={option.value}
               type="button"
-              className={selectedRange === option.value ? "btn" : ""}
+              className={selectedRange === option.value ? "btn" : "ghost-btn"}
               onClick={() => setSelectedRange(option.value)}
-              style={
-                selectedRange === option.value
-                  ? undefined
-                  : {
-                      padding: "12px 16px",
-                      borderRadius: 14,
-                      border: "1px solid var(--border)",
-                      background: "rgba(255, 255, 255, 0.7)",
-                      cursor: "pointer",
-                    }
-              }
             >
               {option.label}
             </button>

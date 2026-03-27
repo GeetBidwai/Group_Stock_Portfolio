@@ -13,19 +13,17 @@ export function SectorList({ loading, sectors, selectedSectorId, marketLabel, on
       ) : !sectors.length ? (
         <p className="muted" style={{ margin: 0 }}>No sectors available for this market.</p>
       ) : (
-        <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           {sectors.map((sector) => (
             <button
               key={sector.id}
               type="button"
               onClick={() => onSelect(sector.id)}
+              className={`dashboard-card dashboard-card--selectable ${selectedSectorId === sector.id ? "dashboard-card--active" : ""}`}
               style={{
-                border: "1px solid var(--border)",
-                borderRadius: 16,
-                padding: "14px 16px",
                 textAlign: "left",
-                cursor: "pointer",
-                background: selectedSectorId === sector.id ? "rgba(17, 75, 95, 0.08)" : "rgba(255, 255, 255, 0.72)",
+                background: selectedSectorId === sector.id ? "var(--gradient-accent)" : undefined,
+                color: selectedSectorId === sector.id ? "#ffffff" : undefined,
               }}
             >
               <strong>{sector.name}</strong>
@@ -36,4 +34,3 @@ export function SectorList({ loading, sectors, selectedSectorId, marketLabel, on
     </section>
   );
 }
-

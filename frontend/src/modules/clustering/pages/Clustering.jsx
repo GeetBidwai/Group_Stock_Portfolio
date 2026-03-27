@@ -34,14 +34,7 @@ function ClusterTooltip({ active, payload }) {
 
 function SummaryCard({ label, value, tone }) {
   return (
-    <article
-      style={{
-        padding: "18px 18px 16px",
-        borderRadius: 20,
-        border: "1px solid rgba(23, 33, 33, 0.08)",
-        background: "rgba(255, 255, 255, 0.7)",
-      }}
-    >
+    <article className="dashboard-card">
       <p className="muted" style={{ margin: 0, marginBottom: 8, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.08em" }}>
         {label}
       </p>
@@ -213,15 +206,7 @@ export function ClusteringPage() {
               </p>
             </div>
 
-            <div
-              style={{
-                height: 500,
-                padding: 12,
-                borderRadius: 24,
-                background: "linear-gradient(180deg, rgba(255,255,255,0.36), rgba(220,228,211,0.2))",
-                border: "1px solid rgba(23, 33, 33, 0.06)",
-              }}
-            >
+            <div className="chart-panel" style={{ height: 500 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart margin={{ top: 16, right: 24, bottom: 20, left: 12 }}>
                   <CartesianGrid stroke="rgba(17, 75, 95, 0.08)" />

@@ -82,5 +82,251 @@
     "title": "Important API Groups",
     "source": "assistant_module/data/knowledge_base.json",
     "content": "Main API groups include auth, portfolio, stocks, comparison, risk, forecasting, sentiment, recommendations, commodities, crypto, and assistant. Assistant endpoint is POST /api/assistant/chat/. It should remain backward compatible for the existing frontend widget."
+  },
+  {
+    "id": "general-platform-purpose",
+    "title": "General FAQ: Platform Purpose",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: What is this platform used for?\nAnswer: This platform is used for stock analytics, portfolio tracking, forecasting, sentiment analysis, risk insights, commodities analysis, crypto forecasting, and assistant-based guidance."
+  },
+  {
+    "id": "general-platform-users",
+    "title": "General FAQ: Who Can Use The Platform",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Who can use this platform?\nAnswer: Anyone with a registered account can use the platform to access its analytics and portfolio features."
+  },
+  {
+    "id": "general-signup-required",
+    "title": "General FAQ: Signup Requirement",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Do I need to sign up before using the platform?\nAnswer: Yes, you generally need to create an account and log in before accessing the protected analytics workspace."
+  },
+  {
+    "id": "general-after-login",
+    "title": "General FAQ: What Happens After Login",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: What can I do after logging in?\nAnswer: After logging in, you can browse stocks, manage your portfolio, compare stocks, view risk insights, run forecasts, analyze sentiment, check commodities, explore BTC forecasts, and use the AI assistant."
+  },
+  {
+    "id": "general-not-only-stocks",
+    "title": "General FAQ: More Than Stocks",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Is this platform only for stocks?\nAnswer: No, the platform also includes gold and silver analytics, BTC forecasting, and an AI assistant in addition to stock-related features."
+  },
+  {
+    "id": "general-create-portfolio",
+    "title": "General FAQ: Create Portfolio",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Can I create my own portfolio here?\nAnswer: Yes, you can add stocks to your portfolio and use the platform to analyze them through different modules."
+  },
+  {
+    "id": "general-supports-comparison",
+    "title": "General FAQ: Stock Comparison Support",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Does the platform support stock comparison?\nAnswer: Yes, the platform includes a stock comparison feature that helps compare two selected stocks using key performance indicators."
+  },
+  {
+    "id": "general-supports-risk",
+    "title": "General FAQ: Risk Support",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Can I check stock risk on this platform?\nAnswer: Yes, the platform provides risk categorization and portfolio risk breakdown features."
+  },
+  {
+    "id": "general-supports-forecasting",
+    "title": "General FAQ: Forecasting Support",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Does the platform offer stock price forecasting?\nAnswer: Yes, the platform includes forecasting tools for selected stocks and portfolio-based forecast insights."
+  },
+  {
+    "id": "general-supports-sentiment",
+    "title": "General FAQ: Sentiment Support",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Can I see news-based stock sentiment?\nAnswer: Yes, the sentiment module analyzes recent news related to a stock and provides an overall sentiment view."
+  },
+  {
+    "id": "general-download-reports",
+    "title": "General FAQ: Download Reports",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Can I download reports from this platform?\nAnswer: Yes, the platform supports downloadable sentiment reports for selected stocks."
+  },
+  {
+    "id": "general-market-sectors",
+    "title": "General FAQ: Market Sectors",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Does the platform show market sectors?\nAnswer: Yes, stocks can be explored by market and sector for easier browsing and filtering."
+  },
+  {
+    "id": "general-gold-silver",
+    "title": "General FAQ: Gold And Silver Analytics",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Can I analyze gold and silver here?\nAnswer: Yes, the platform includes a dedicated gold and silver analytics section with trend and forecast information."
+  },
+  {
+    "id": "general-btc",
+    "title": "General FAQ: BTC Analysis",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Does the platform support BTC analysis?\nAnswer: Yes, the platform provides BTC forecasting and historical trend analysis."
+  },
+  {
+    "id": "general-ai-assistant",
+    "title": "General FAQ: AI Assistant Availability",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Is there an AI chatbot in the platform?\nAnswer: Yes, the platform includes an AI assistant that helps users navigate portfolio questions, comparisons, forecasts, sentiment, and more."
+  },
+  {
+    "id": "general-beginner-friendly",
+    "title": "General FAQ: Beginner Friendly",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Is this platform suitable for beginners?\nAnswer: Yes, the platform is designed to help both beginners and more advanced users explore market analytics through guided modules."
+  },
+  {
+    "id": "general-monitor-holdings",
+    "title": "General FAQ: Monitor Holdings",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Can I use this platform to monitor my holdings regularly?\nAnswer: Yes, the portfolio and analytics modules are useful for regularly monitoring your holdings and performance."
+  },
+  {
+    "id": "general-live-and-cached-data",
+    "title": "General FAQ: Live And Cached Data",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Does this platform give only live data?\nAnswer: The platform primarily uses market data sources and cached analytics data depending on the feature and availability."
+  },
+  {
+    "id": "general-analysis-not-trading",
+    "title": "General FAQ: Analysis Versus Trading",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Is this platform focused on analysis or trading?\nAnswer: This platform is focused on analysis, insights, and decision support rather than direct trading."
+  },
+  {
+    "id": "general-main-benefit",
+    "title": "General FAQ: Main Benefit",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: What is the main benefit of this platform?\nAnswer: The main benefit is that it brings multiple financial analysis tools into one place, making it easier to study stocks, portfolios, risk, sentiment, commodities, and crypto from a single dashboard."
+  },
+  {
+    "id": "domain-portfolio-stocks",
+    "title": "Project FAQ: Portfolio Stocks",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: What stocks are currently in my portfolio?\nAnswer: You can view all the stocks currently added to your portfolio in the Portfolio section, grouped by sector where applicable."
+  },
+  {
+    "id": "domain-top-sector",
+    "title": "Project FAQ: Portfolio Sector Count",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Which sector has the highest number of stocks in my portfolio?\nAnswer: The platform can summarize your portfolio by sector and identify the sector with the highest stock count."
+  },
+  {
+    "id": "domain-risk-breakdown",
+    "title": "Project FAQ: Portfolio Risk Breakdown",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: What is my current portfolio risk breakdown?\nAnswer: Your portfolio risk breakdown shows how many of your holdings are classified as low, medium, and high risk based on volatility analysis."
+  },
+  {
+    "id": "domain-top-gainer",
+    "title": "Project FAQ: Top Gainer",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Which stock is my top gainer right now?\nAnswer: The system can identify the top gainer in your portfolio by comparing the latest price movement of your holdings."
+  },
+  {
+    "id": "domain-top-loser",
+    "title": "Project FAQ: Top Loser",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Which stock is my top loser right now?\nAnswer: The system can identify the top loser in your portfolio by checking which holding has the weakest recent percentage change."
+  },
+  {
+    "id": "domain-compare-portfolio-stocks",
+    "title": "Project FAQ: Compare Portfolio Stocks",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Compare two stocks from my portfolio and tell me which is performing better.\nAnswer: The platform compares two selected stocks using return, volatility, normalized performance, and supporting insights to help determine which one is performing better."
+  },
+  {
+    "id": "domain-stock-analytics",
+    "title": "Project FAQ: Specific Stock Analytics",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Show me the analytics for a specific stock in my portfolio.\nAnswer: The platform can display stock analytics such as current price, PE ratio, intrinsic value estimate, discount percentage, and price history."
+  },
+  {
+    "id": "domain-pe-comparison",
+    "title": "Project FAQ: PE Ratio Comparison",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: What is the PE ratio comparison across my portfolio stocks?\nAnswer: The PE comparison view shows the PE ratios of your portfolio stocks and calculates an average PE ratio for the portfolio where data is available."
+  },
+  {
+    "id": "domain-stock-forecast",
+    "title": "Project FAQ: Stock Forecast",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Forecast the price of a selected stock for the next 3 months.\nAnswer: The forecasting module can generate a projected price path for a stock using supported forecasting models and selected horizons such as 3 months."
+  },
+  {
+    "id": "domain-portfolio-next-day-forecast",
+    "title": "Project FAQ: Portfolio Next-Day Forecast",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: What is the average next-day forecast for my portfolio?\nAnswer: The portfolio forecast feature calculates forecasts for your portfolio holdings and returns an average predicted value for the next day."
+  },
+  {
+    "id": "domain-stock-search",
+    "title": "Project FAQ: Search Stocks",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Search for a stock by symbol or company name.\nAnswer: The stock search feature lets you search by stock symbol or company name and returns matching results from the stock reference database."
+  },
+  {
+    "id": "domain-stocks-by-market-sector",
+    "title": "Project FAQ: Stocks By Market And Sector",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Show me stocks by market and sector.\nAnswer: The Stocks page allows you to browse stocks by market first and then by sector, with live-priced entries where available."
+  },
+  {
+    "id": "domain-risk-list",
+    "title": "Project FAQ: Risk List Categories",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Which stocks in the risk list are categorized as low, medium, or high risk?\nAnswer: The risk list shows stocks along with their price and assigned risk category so you can quickly filter or review them."
+  },
+  {
+    "id": "domain-sentiment-analysis",
+    "title": "Project FAQ: Sentiment Analysis",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Analyze the recent news sentiment for a stock.\nAnswer: The sentiment module can analyze recent stock-related news and classify the overall sentiment as positive, neutral, or negative."
+  },
+  {
+    "id": "domain-sentiment-report",
+    "title": "Project FAQ: Sentiment Report Download",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Generate and download a sentiment report for a stock.\nAnswer: The platform can generate a downloadable PDF sentiment report based on recent news and sentiment analysis for the selected stock."
+  },
+  {
+    "id": "domain-recommendations",
+    "title": "Project FAQ: Recommendations",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: What recommendations do you have for top and bottom stocks right now?\nAnswer: The recommendations module provides ranked top and bottom stock suggestions using sentiment and short-term trend signals."
+  },
+  {
+    "id": "domain-gold-silver-analytics",
+    "title": "Project FAQ: Gold And Silver Insights",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Show me the gold and silver analytics with forecast insights.\nAnswer: The commodities section provides gold and silver analytics, converted pricing views, and forecast insights for selected horizons."
+  },
+  {
+    "id": "domain-gold-silver-correlation",
+    "title": "Project FAQ: Gold Silver Correlation",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: What is the current correlation between gold and silver?\nAnswer: The correlation section shows how closely gold and silver prices are moving together over the selected analysis period."
+  },
+  {
+    "id": "domain-btc-forecast",
+    "title": "Project FAQ: BTC Forecast",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: Show me the BTC forecast for 3 months, 6 months, or 1 year.\nAnswer: The BTC module provides historical trend analysis and projected outlooks for different time ranges such as 3 months, 6 months, and 1 year."
+  },
+  {
+    "id": "domain-ai-assistant-help",
+    "title": "Project FAQ: Assistant Capabilities",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: What can the AI assistant help me do inside this platform?\nAnswer: The AI assistant can help with portfolio questions, holdings summaries, sector distribution, stock comparison, forecasting, sentiment, commodities, and BTC-related guidance based on platform data."
+  },
+  {
+    "id": "usage-logout",
+    "title": "App Usage FAQ: Logout",
+    "source": "assistant_module/data/knowledge_base.json",
+    "content": "Question: How do I logout?\nAnswer: You can log out by clicking the Logout button in the sidebar navigation."
   }
 ]
