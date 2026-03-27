@@ -544,6 +544,167 @@ mark {
   border: 1px solid var(--border);
 }
 
+.recommendation-modal__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 22, 25, 0.42);
+}
+
+.recommendation-modal {
+  width: min(1100px, 100%);
+  max-height: min(88vh, 940px);
+  overflow: auto;
+  display: grid;
+  gap: 18px;
+}
+
+.recommendation-modal__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.recommendation-modal__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.recommendation-modal__close {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+}
+
+.recommendation-modal__loading {
+  min-height: 180px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 12px;
+}
+
+.recommendation-modal__spinner {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 3px solid rgba(17, 75, 95, 0.2);
+  border-top-color: var(--accent);
+  animation: recommendation-spin 0.8s linear infinite;
+}
+
+@keyframes recommendation-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.recommendation-modal__error {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(209, 102, 102, 0.28);
+  background: rgba(209, 102, 102, 0.08);
+}
+
+.recommendation-modal__content {
+  display: grid;
+  gap: 18px;
+}
+
+.recommendation-modal__section {
+  display: grid;
+  gap: 12px;
+}
+
+.recommendation-modal__section h3 {
+  margin: 0;
+}
+
+.recommendation-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.recommendation-modal__card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.7);
+  display: grid;
+  gap: 10px;
+}
+
+.recommendation-modal__card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.recommendation-modal__symbol {
+  margin: 0;
+  font-weight: 700;
+}
+
+.recommendation-modal__company {
+  margin: 6px 0 0;
+}
+
+.recommendation-modal__stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.95rem;
+}
+
+.recommendation-modal__tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.recommendation-modal__tag.is-positive {
+  color: #0f6a55;
+  background: rgba(37, 179, 129, 0.14);
+  border-color: rgba(37, 179, 129, 0.3);
+}
+
+.recommendation-modal__tag.is-value {
+  color: #8a5f00;
+  background: rgba(242, 191, 94, 0.2);
+  border-color: rgba(242, 191, 94, 0.34);
+}
+
+.is-positive-text {
+  color: #1a936f;
+}
+
+.is-negative-text {
+  color: #c05353;
+}
+
+.recommendation-modal__disclaimer {
+  margin: 0;
+  font-size: 13px;
+}
+
 @media (max-width: 600px) {
   .auth-stage {
     grid-template-columns: 1fr;

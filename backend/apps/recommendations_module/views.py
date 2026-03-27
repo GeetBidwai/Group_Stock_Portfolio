@@ -5,5 +5,8 @@ from apps.recommendations_module.services.recommendation_service import Recommen
 
 class RecommendationListView(views.APIView):
     def get(self, request):
-        return response.Response(RecommendationService().generate_recommendations())
+        try:
+            return response.Response(RecommendationService().generate_recommendations())
+        except Exception:
+            return response.Response({"error": "Unable to fetch recommendations"}, status=503)
 

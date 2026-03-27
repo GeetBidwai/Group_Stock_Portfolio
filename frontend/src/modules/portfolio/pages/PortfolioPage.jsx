@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
+import { RecommendationModal } from "../../recommendations/components/RecommendationModal";
 import { portfolioApi } from "../services/portfolioApi";
 
 const CHART_COLORS = ["#167c80", "#28b8b0", "#77c9e3", "#f2bf5e", "#ef6f6c", "#7b6ee6"];
@@ -37,6 +38,7 @@ export function PortfolioPage() {
     top_gainers: [],
     top_losers: [],
   });
+  const [isRecommendationOpen, setIsRecommendationOpen] = useState(false);
   const [error, setError] = useState("");
 
   async function load() {
@@ -106,7 +108,7 @@ export function PortfolioPage() {
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <button
               type="button"
-              onClick={() => navigate("/stocks")}
+              onClick={() => setIsRecommendationOpen(true)}
               style={{
                 minWidth: 220,
                 padding: "16px 18px",
@@ -117,8 +119,8 @@ export function PortfolioPage() {
                 textAlign: "left",
               }}
             >
-              <p className="muted" style={{ margin: 0 }}>Stocks Browser</p>
-              <p style={{ margin: "6px 0 0", fontSize: 18, fontWeight: 700 }}>Add More Stocks</p>
+              <p className="muted" style={{ margin: 0 }}>Insights</p>
+              <p style={{ margin: "6px 0 0", fontSize: 18, fontWeight: 700 }}>Recommendations</p>
             </button>
             <div
               style={{
@@ -334,6 +336,11 @@ export function PortfolioPage() {
           </div>
         )}
       </section>
+
+      <RecommendationModal
+        isOpen={isRecommendationOpen}
+        onClose={() => setIsRecommendationOpen(false)}
+      />
     </>
   );
 }
