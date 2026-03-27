@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { apiClient } from "../services/apiClient";
 import { useAuth } from "../modules/auth/hooks/useAuth";
@@ -8,13 +8,26 @@ export function PersonalAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const messagesRef = useRef(null);
   const [messages, setMessages] = useState(() => [
     {
       id: "assistant-welcome",
       role: "assistant",
-      content: `Hi ${user?.username || "there"}! I am your personal assistant. Ask me about your portfolio, comparison, risk, or forecasts.`,
+      content: `Hi ${user?.username || "there"}! I am your Market Atlas assistant. Ask me about your portfolio, risk, forecasts, or even a simple question to get started.`,
     },
   ]);
+  const quickPrompts = [
+    "What is in my portfolio?",
+    "What is my risk breakdown?",
+    "Compare my top two stocks",
+  ];
+  const showQuickPrompts = messages.length <= 1 && !isLoading;
+
+  useEffect(() => {
+    if (messagesRef.current) {
+      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]);
 
   async function sendMessage(rawText) {
     const trimmed = rawText.trim();
@@ -81,7 +94,7 @@ export function PersonalAssistant() {
           <div className="personal-assistant__header">
             <div>
               <strong>Personal Assistant</strong>
-              <p className="muted">Read-only guidance using your current app data.</p>
+              <p className="muted">Friendly help using your current app data.</p>
             </div>
             <button
               type="button"
@@ -93,7 +106,7 @@ export function PersonalAssistant() {
             </button>
           </div>
 
-          <div className="personal-assistant__messages">
+          <div ref={messagesRef} className="personal-assistant__messages">
             {messages.map((message) => (
               <div key={message.id} className={`personal-assistant__message personal-assistant__message--${message.role}`}>
                 {message.content.split("\n").map((line, index) => (
@@ -103,6 +116,22 @@ export function PersonalAssistant() {
             ))}
             {isLoading ? <div className="personal-assistant__typing">Thinking...</div> : null}
           </div>
+
+          {showQuickPrompts ? (
+            <div className="personal-assistant__suggestions">
+              {quickPrompts.map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  className="personal-assistant__chip"
+                  onClick={() => sendMessage(prompt)}
+                  disabled={isLoading}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           <form
             className="personal-assistant__form"
@@ -114,7 +143,7 @@ export function PersonalAssistant() {
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask about your portfolio"
+              placeholder="Ask about your portfolio or stock ideas"
               aria-label="Ask your personal assistant"
             />
             <button type="submit" className="btn" disabled={isLoading}>

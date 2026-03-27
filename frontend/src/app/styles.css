@@ -458,7 +458,7 @@ mark {
   border-radius: 22px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 24px 48px rgba(17, 75, 95, 0.22);
+  box-shadow: 0 24px 48px rgba(17, 75, 95, 0.18);
 }
 
 .personal-assistant__header {
@@ -527,8 +527,14 @@ mark {
   border: 1px solid var(--border);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
-  padding: 8px 12px;
+  padding: 7px 12px;
   cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.personal-assistant__chip:hover:not(:disabled) {
+  background: rgba(220, 239, 231, 0.9);
+  border-color: rgba(26, 147, 111, 0.25);
 }
 
 .personal-assistant__form {
@@ -542,6 +548,7 @@ mark {
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.94);
 }
 
 @media (max-width: 600px) {

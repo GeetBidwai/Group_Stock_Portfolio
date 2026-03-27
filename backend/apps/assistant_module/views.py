@@ -1,5 +1,6 @@
 from rest_framework import permissions, response, views
 
+from apps.assistant_module.intent_detection import IntentDetectionService
 from apps.assistant_module.rag.rag_pipeline import get_assistant_rag_pipeline
 from apps.assistant_module.services import PersonalAssistantService
 
@@ -20,6 +21,19 @@ class PersonalAssistantChatView(views.APIView):
             message=message,
             history=history,
         )
+        return response.Response(result)
+
+
+class DetectIntentView(views.APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        message = str(request.data.get("message") or "").strip()
+        if not message:
+            return response.Response({"error": "message is required"}, status=400)
+
+        result = IntentDetectionService().detect(message)
         return response.Response(result)
 
 
