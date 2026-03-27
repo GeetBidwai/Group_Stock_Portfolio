@@ -22,7 +22,7 @@ function answerForMessage(message, page) {
   }
 
   if (text === "hi" || text === "hello" || text === "hey" || text === "hii") {
-    return `${text.charAt(0).toUpperCase() + text.slice(1)}!\n\n${PAGE_WELCOME[page] || "I can help you complete the authentication steps on this page."}\n\nTell me which step you are on.`;
+    return "Hello there. What do you need help with?";
   }
 
   if (text.includes("password") && text.includes("match")) {
@@ -106,6 +106,7 @@ export function AuthAssistant({ page = "login" }) {
   ]);
 
   const suggestions = useMemo(() => PAGE_HINTS[page] || PAGE_HINTS.login, [page]);
+  const showSuggestions = messages.length <= 1;
 
   function sendMessage(rawText) {
     const trimmed = rawText.trim();
@@ -156,13 +157,15 @@ export function AuthAssistant({ page = "login" }) {
             ))}
           </div>
 
-          <div className="auth-assistant__suggestions">
-            {suggestions.map((suggestion) => (
-              <button key={suggestion} type="button" className="auth-assistant__chip" onClick={() => sendMessage(suggestion)}>
-                {suggestion}
-              </button>
-            ))}
-          </div>
+          {showSuggestions ? (
+            <div className="auth-assistant__suggestions">
+              {suggestions.map((suggestion) => (
+                <button key={suggestion} type="button" className="auth-assistant__chip" onClick={() => sendMessage(suggestion)}>
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           <form
             className="auth-assistant__form"

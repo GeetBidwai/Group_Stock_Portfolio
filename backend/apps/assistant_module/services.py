@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import re
 
+from apps.assistant_module.intent_detection import IntentDetectionService
 from apps.comparison_module.services import StockComparisonService
 from apps.forecasting_module.services import StockForecastingService
 from apps.portfolio_module.models import PortfolioStock
@@ -16,26 +17,57 @@ logger = logging.getLogger(__name__)
 
 class PersonalAssistantService:
     MAX_HISTORY_MESSAGES = 8
+    SMALL_TALK_KEYWORDS = {
+        "hi",
+        "hello",
+        "hey",
+        "hii",
+        "hola",
+        "thanks",
+        "thank you",
+        "thx",
+        "who are you",
+        "what are you",
+        "introduce yourself",
+        "good morning",
+        "good afternoon",
+        "good evening",
+        "how are you",
+        "how r u",
+        "how are you doing",
+        "how do you do",
+        "lets start",
+        "let's start",
+        "start",
+        "begin",
+    }
 
     def reply(self, user, message: str, history: list[dict] | None = None) -> dict:
         cleaned_message = (message or "").strip()
         sanitized_history = self._sanitize_history(history or [])
         holdings = self._portfolio_holdings(user)
+        detection = IntentDetectionService().detect(cleaned_message)
 
         direct_reply = self._direct_reply(user, cleaned_message, holdings)
         if direct_reply:
             return {
                 "reply": direct_reply,
                 "mode": "project_data",
+                "intent": detection["intent"],
+                "entities": detection["entities"],
             }
 
         rag_reply = self._rag_reply(cleaned_message, sanitized_history)
         if rag_reply:
+            rag_reply.setdefault("intent", detection["intent"])
+            rag_reply.setdefault("entities", detection["entities"])
             return rag_reply
 
         return {
             "reply": self._default_reply(holdings),
             "mode": "fallback",
+            "intent": detection["intent"],
+            "entities": detection["entities"],
         }
 
     def _sanitize_history(self, history: list[dict]) -> list[dict]:
@@ -101,10 +133,11 @@ class PersonalAssistantService:
         if not text:
             return "Ask me about your portfolio, holdings, comparison, risk view, or forecast."
 
-        if text in {"hi", "hello", "hey", "hii"}:
-            return "Hi! I am your portfolio assistant. Ask me about your holdings, sectors, risk view, comparison, or forecast."
+        small_talk = self._small_talk_reply(text, holdings)
+        if small_talk:
+            return small_talk
 
-        if "what can you do" in text or "help" == text:
+        if "what can you do" in text or text in {"help", "help me"}:
             return self._default_reply(holdings)
 
         if ("portfolio" in text or "holdings" in text or "stocks do i have" in text) and any(
@@ -126,6 +159,38 @@ class PersonalAssistantService:
 
         if any(word in text for word in {"forecast", "prediction", "predict"}):
             return self._forecast_reply(text, holdings)
+
+        return None
+
+    def _small_talk_reply(self, text: str, holdings: list[dict]) -> str | None:
+        if text in {"hi", "hello", "hey", "hii", "hola"}:
+            return "Hello there. What's on your mind today?"
+
+        if any(phrase in text for phrase in {"how are you", "how r u", "how are you doing", "how do you do"}):
+            return "I am doing well. What would you like to explore today?"
+
+        if any(phrase in text for phrase in {"good morning", "good afternoon", "good evening"}):
+            return "Good to see you. What would you like help with today?"
+
+        if any(phrase in text for phrase in {"thanks", "thank you", "thx"}):
+            return "You are welcome. I am here whenever you want to explore your portfolio or stock ideas."
+
+        if any(phrase in text for phrase in {"who are you", "what are you", "introduce yourself"}):
+            return (
+                "I am your Market Atlas assistant. I can chat with you, answer general portfolio questions, "
+                "and help with holdings, risk, comparisons, forecasts, sentiment, commodities, and bitcoin."
+            )
+
+        if text in {"let's start", "lets start", "start", "begin"}:
+            if holdings:
+                return (
+                    "Perfect. We already have enough to begin. "
+                    "You can ask me what is in your portfolio, which sector is strongest, or which two stocks to compare first."
+                )
+            return (
+                "Perfect. Let us start by building your base. "
+                "Add a few stocks to your portfolio, or ask me about forecasts, sentiment, commodities, or bitcoin."
+            )
 
         return None
 
@@ -217,7 +282,10 @@ class PersonalAssistantService:
         try:
             result = StockComparisonService().compare_portfolio_stocks(user, first, second, "6m")
         except Exception:
-            return f"I could not compare {first} and {second} right now."
+            return (
+                f"I recognized {first} and {second}, but I could not compare them right now because the market data "
+                "needed for the comparison is unavailable or incomplete. Please try again in a moment."
+            )
 
         stock_a = result.get("stockA") or {}
         stock_b = result.get("stockB") or {}
@@ -260,15 +328,21 @@ class PersonalAssistantService:
     def _extract_symbols(self, text: str, holdings: list[dict]) -> list[str]:
         symbol_map = {item["symbol"].upper(): item for item in holdings}
         found: list[str] = []
+        normalized_text = re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
 
         for symbol, item in symbol_map.items():
             if re.search(rf"\b{re.escape(symbol.lower())}\b", text.lower()):
                 found.append(symbol)
                 continue
 
+            normalized_symbol = re.sub(r"[^a-z0-9]+", " ", symbol.lower()).strip()
+            if normalized_symbol and normalized_symbol in normalized_text:
+                found.append(symbol)
+                continue
+
             if item["name"]:
                 normalized_name = re.sub(r"[^a-z0-9]+", " ", item["name"].lower()).strip()
-                if normalized_name and normalized_name in re.sub(r"[^a-z0-9]+", " ", text.lower()):
+                if normalized_name and normalized_name in normalized_text:
                     found.append(symbol)
 
         if found:
@@ -281,12 +355,12 @@ class PersonalAssistantService:
         if holdings:
             sample = ", ".join(item["symbol"] for item in holdings[:4])
             return (
-                "I can help with your portfolio after login. Ask things like: "
-                f"'What is in my portfolio?', 'How many stocks do I have?', 'Compare {sample}', "
-                "'What is my risk breakdown?', or 'Forecast <symbol>'."
+                "I can chat with you and help with your portfolio after login. "
+                f"Try asking: 'How are you?', 'What is in my portfolio?', 'Compare {sample}', "
+                "'What is my risk breakdown?', 'Forecast <symbol>', or 'Show sentiment for a stock'."
             )
         return (
-            "I can help with your portfolio after login. Ask me about your holdings, sectors, comparison, risk, or forecast."
+            "I can chat with you and help after login with holdings, sectors, comparison, risk, forecast, sentiment, commodities, and bitcoin."
         )
 
     def _rag_reply(self, message: str, history: list[dict]) -> dict | None:
