@@ -362,8 +362,8 @@ class StocksPortfolioService:
             )
 
         ranked_movers = [item for item in movers if item["change_pct"] is not None]
-        ranked_gainers = [item for item in sorted(ranked_movers, key=lambda item: item["change_pct"], reverse=True) if item["change_pct"] > 0]
-        ranked_losers = [item for item in sorted(ranked_movers, key=lambda item: item["change_pct"]) if item["change_pct"] < 0]
+        ranked_gainers = sorted(ranked_movers, key=lambda item: item["change_pct"], reverse=True)
+        ranked_losers = sorted(ranked_movers, key=lambda item: item["change_pct"])
         top_gainers = ranked_gainers[:1]
         primary_gainer_id = top_gainers[0]["entry_id"] if top_gainers else None
         top_losers = [item for item in ranked_losers if item["entry_id"] != primary_gainer_id][:1]

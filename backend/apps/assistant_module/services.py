@@ -489,14 +489,9 @@ class PersonalAssistantService:
 
     def _default_reply(self, holdings: list[dict]) -> str:
         if holdings:
-            sample = ", ".join(item["symbol"] for item in holdings[:4])
-            return (
-                "I can chat with you and help with your portfolio after login. "
-                f"Try asking: 'How are you?', 'What is in my portfolio?', 'Compare {sample}', "
-                "'What is my risk breakdown?', 'Forecast <symbol>', or 'Show sentiment for a stock'."
-            )
+            return "I checked the charts, the news, and my soul. Still no signal on that one."
         return (
-            "I can chat with you and help after login with holdings, sectors, comparison, risk, forecast, sentiment, commodities, and bitcoin."
+            "I checked the charts, the news, and my soul. Still no signal on that one."
         )
 
     def _rag_reply(self, message: str, history: list[dict]) -> dict | None:

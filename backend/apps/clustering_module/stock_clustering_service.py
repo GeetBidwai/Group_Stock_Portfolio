@@ -11,6 +11,7 @@ from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 
 from apps.portfolio_module.models import PortfolioStock
+from apps.stocks_module.models import PortfolioEntry
 from apps.shared.services.market_data_service import MarketDataService
 
 
@@ -41,11 +42,11 @@ class StockClusteringService:
             return cached
 
         try:
-            symbols = self._select_symbols(user, portfolio_id)
-            if len(symbols) < 2:
+            stock_records = self._select_stock_records(user, portfolio_id)
+            if len(stock_records) < 2:
                 return []
 
-            feature_frame = self._build_feature_frame(symbols)
+            feature_frame = self._build_feature_frame(stock_records)
             if len(feature_frame) < 2:
                 return []
 
@@ -56,17 +57,56 @@ class StockClusteringService:
         cache.set(cache_key, points, self.CACHE_TIMEOUT_SECONDS)
         return points
 
-    def _select_symbols(self, user, portfolio_id: int | None) -> list[str]:
+    def _select_stock_records(self, user, portfolio_id: int | None) -> list[dict]:
         queryset = PortfolioStock.objects.filter(user=user).select_related("portfolio_type__sector")
         if portfolio_id:
             queryset = queryset.filter(portfolio_type_id=portfolio_id)
 
-        return list(dict.fromkeys(queryset.values_list("symbol", flat=True)))
+        records: list[dict] = []
+        seen_symbols: set[str] = set()
 
-    def _build_feature_frame(self, symbols: list[str]) -> pd.DataFrame:
+        for item in queryset:
+            symbol = (item.symbol or "").upper().strip()
+            if not symbol or symbol in seen_symbols:
+                continue
+            seen_symbols.add(symbol)
+            records.append(
+                {
+                    "symbol": symbol,
+                    "market_symbol": symbol,
+                    "sector": item.portfolio_type.sector.name if item.portfolio_type and item.portfolio_type.sector else "Unknown",
+                }
+            )
+
+        if portfolio_id:
+            return records
+
+        grouped_entries = (
+            PortfolioEntry.objects.filter(user=user)
+            .select_related("stock", "sector", "sector__market")
+            .order_by("stock__symbol")
+        )
+        for entry in grouped_entries:
+            symbol = (entry.stock.symbol or "").upper().strip()
+            if not symbol or symbol in seen_symbols:
+                continue
+            seen_symbols.add(symbol)
+            market_code = (entry.sector.market.code or "").upper() if entry.sector and entry.sector.market else ""
+            market_symbol = f"{symbol}.NS" if market_code == "IN" and "." not in symbol else symbol
+            records.append(
+                {
+                    "symbol": symbol,
+                    "market_symbol": market_symbol,
+                    "sector": entry.sector.name if entry.sector else "Unknown",
+                }
+            )
+
+        return records
+
+    def _build_feature_frame(self, stock_records: list[dict]) -> pd.DataFrame:
         rows = []
-        for symbol in symbols:
-            row = self._build_feature_row(symbol)
+        for stock_record in stock_records:
+            row = self._build_feature_row(stock_record)
             if row is not None:
                 rows.append(row)
 
@@ -83,9 +123,11 @@ class StockClusteringService:
         frame = frame.replace([np.inf, -np.inf], np.nan).dropna(subset=["daily_return", "volatility", "volume"])
         return frame.reset_index(drop=True)
 
-    def _build_feature_row(self, symbol: str) -> dict | None:
-        snapshot = self.market_data.get_ticker_snapshot(symbol)
-        history = pd.DataFrame(snapshot.get("history") or self.market_data.get_history(symbol, period="1y", interval="1d"))
+    def _build_feature_row(self, stock_record: dict) -> dict | None:
+        symbol = str(stock_record.get("symbol") or "").upper().strip()
+        market_symbol = str(stock_record.get("market_symbol") or symbol).strip()
+        snapshot = self.market_data.get_ticker_snapshot(market_symbol)
+        history = pd.DataFrame(snapshot.get("history") or self.market_data.get_history(market_symbol, period="1y", interval="1d"))
         if history.empty:
             return None
 
@@ -102,7 +144,7 @@ class StockClusteringService:
 
         return {
             "stock": symbol,
-            "sector": snapshot.get("sector") or "Unknown",
+            "sector": snapshot.get("sector") or stock_record.get("sector") or "Unknown",
             "daily_return": float(returns.tail(60).mean()),
             "volatility": float(rolling_volatility.tail(60).mean()) if not rolling_volatility.empty else float(returns.std()),
             "volume": float(history["volume"].tail(60).mean()),
@@ -119,16 +161,16 @@ class StockClusteringService:
         if effective_k < 2:
             return []
 
+        model = KMeans(n_clusters=effective_k, random_state=42, n_init="auto")
+        assignments = model.fit_predict(scaled_features)
+
         reduced = self._reduce_dimensions(scaled_features, method)
         if reduced is None:
             reduced = self._reduce_dimensions(scaled_features, "pca")
 
-        model = KMeans(n_clusters=effective_k, random_state=42, n_init="auto")
-        assignments = model.fit_predict(reduced)
-
         if len(frame) > effective_k:
             try:
-                silhouette_score(reduced, assignments)
+                silhouette_score(scaled_features, assignments)
             except Exception:
                 pass
 

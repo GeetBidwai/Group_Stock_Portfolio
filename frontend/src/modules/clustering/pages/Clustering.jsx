@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CartesianGrid, Cell, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
 
+import { MetricCard } from "../../../components/ui/Card";
 import { clusteringApi } from "../services/clusteringApi";
 
 const CLUSTER_COLORS = ["#114b5f", "#1a936f", "#c05621", "#7f5539", "#2b6cb0", "#b83280", "#718096", "#805ad5"];
@@ -29,17 +30,6 @@ function ClusterTooltip({ active, payload }) {
       <div className="muted" style={{ marginTop: 4 }}>Cluster {point.cluster}</div>
       <div className="muted" style={{ marginTop: 2 }}>{point.sector}</div>
     </div>
-  );
-}
-
-function SummaryCard({ label, value, tone }) {
-  return (
-    <article className="dashboard-card">
-      <p className="muted" style={{ margin: 0, marginBottom: 8, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-        {label}
-      </p>
-      <h3 style={{ margin: 0, color: tone || "var(--accent)" }}>{value}</h3>
-    </article>
   );
 }
 
@@ -246,14 +236,16 @@ export function ClusteringPage() {
                 marginTop: 18,
               }}
             >
-              <SummaryCard label="Projection" value={method.toUpperCase()} />
-              <SummaryCard label="Stocks Mapped" value={String(points.length)} />
+              <MetricCard label="Projection" value={method.toUpperCase()} meta="Current 2D projection method" tone="primary" />
+              <MetricCard label="Stocks Mapped" value={String(points.length)} meta="Stocks with enough data to cluster" tone="primary" />
               {clusterSummary.map(([cluster, count]) => (
-                <SummaryCard
+                <MetricCard
                   key={cluster}
                   label={`Cluster ${cluster}`}
                   value={String(count)}
-                  tone={CLUSTER_COLORS[cluster % CLUSTER_COLORS.length]}
+                  meta="Mapped stocks"
+                  tone="primary"
+                  style={{ borderLeft: `4px solid ${CLUSTER_COLORS[cluster % CLUSTER_COLORS.length]}` }}
                 />
               ))}
             </div>

@@ -1249,6 +1249,10 @@ mark {
   gap: 16px;
 }
 
+.sector-card--clickable {
+  cursor: pointer;
+}
+
 .sector-card__top,
 .sector-card__title-row,
 .sector-card__stats,

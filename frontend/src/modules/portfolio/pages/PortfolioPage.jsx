@@ -43,6 +43,10 @@ function sectorIcon(name) {
   return "📊";
 }
 
+function stopCardNavigation(event) {
+  event.stopPropagation();
+}
+
 export function PortfolioPage() {
   const navigate = useNavigate();
   const [groupedPortfolio, setGroupedPortfolio] = useState([]);
@@ -243,7 +247,7 @@ export function PortfolioPage() {
               <div>
                 <h4 style={{ margin: "0 0 10px" }}>Top Gainer</h4>
                 {!insights.top_gainers?.length ? (
-                  <p className="muted" style={{ margin: 0 }}>No positive mover right now.</p>
+                  <p className="muted" style={{ margin: 0 }}>No mover data available right now.</p>
                 ) : (
                   insights.top_gainers.map((item) => (
                     <button
@@ -306,7 +310,21 @@ export function PortfolioPage() {
           ) : (
             <div className="sector-grid">
               {sectorCards.map((sector) => (
-                <Card key={sector.id} as="article" className="sector-card" interactive>
+                <Card
+                  key={sector.id}
+                  as="article"
+                  className="sector-card sector-card--clickable"
+                  interactive
+                  onClick={() => navigate(`/portfolio/sector/${encodeURIComponent(sector.name)}`)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      navigate(`/portfolio/sector/${encodeURIComponent(sector.name)}`);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
                   <div className="sector-card__top">
                     <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                       <div className="sector-card__icon">{sectorIcon(sector.name)}</div>
@@ -341,18 +359,31 @@ export function PortfolioPage() {
                     <button
                       type="button"
                       className="btn"
-                      onClick={() => navigate(`/portfolio/sector/${encodeURIComponent(sector.name)}`)}
+                      onClick={(event) => {
+                        stopCardNavigation(event);
+                        navigate(`/portfolio/sector/${encodeURIComponent(sector.name)}`);
+                      }}
                     >
                       Open Stocks
                     </button>
                     <button
                       type="button"
                       className="ghost-btn"
-                      onClick={() => navigate(`/quality-stocks?portfolio=${encodeURIComponent(`sector:${sector.id}`)}`)}
+                      onClick={(event) => {
+                        stopCardNavigation(event);
+                        navigate(`/quality-stocks?portfolio=${encodeURIComponent(`sector:${sector.id}`)}`);
+                      }}
                     >
                       Quality
                     </button>
-                    <button type="button" className="ghost-btn" onClick={() => navigate("/clustering")}>
+                    <button
+                      type="button"
+                      className="ghost-btn"
+                      onClick={(event) => {
+                        stopCardNavigation(event);
+                        navigate("/clustering");
+                      }}
+                    >
                       Clusters
                     </button>
                   </div>
