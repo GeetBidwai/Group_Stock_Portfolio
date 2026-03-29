@@ -2,6 +2,7 @@ from django.core.cache import cache
 from rest_framework import generics, permissions, response, throttling, views
 
 from apps.portfolio_module.models import PortfolioStock
+from apps.risk_module.services import RiskCategorizationService
 from apps.stock_search_module.pagination import StockSearchPagination
 from apps.stock_search_module.models import StockReference
 from apps.stock_search_module.serializers import StockReferenceSerializer, StockSearchQuerySerializer
