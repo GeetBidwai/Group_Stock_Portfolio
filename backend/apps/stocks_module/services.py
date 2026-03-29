@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 
 from django.core.cache import cache
+from django.db.models import Count, Max
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
 from apps.risk_module.services import RiskCategorizationService
 from apps.shared.services.market_data_service import MarketDataService
+from apps.stock_search_module.models import StockReference
 from apps.stocks_module.models import PortfolioEntry, Sector, Stock
+from apps.portfolio_module.models import PortfolioStock
 
 
 class StocksPricingService:
@@ -79,6 +83,37 @@ class StocksPricingService:
 class StocksPortfolioService:
     INSIGHTS_CACHE_TIMEOUT_SECONDS = 300
 
+    def _holdings_signature(self, user) -> str:
+        manual_queryset = PortfolioStock.objects.filter(user=user)
+        grouped_queryset = PortfolioEntry.objects.filter(user=user)
+
+        manual_meta = manual_queryset.aggregate(count=Count("id"), latest=Max("created_at"))
+        grouped_meta = grouped_queryset.aggregate(count=Count("id"), latest=Max("added_at"))
+
+        def iso(value):
+            if isinstance(value, datetime):
+                return value.isoformat()
+            return "none"
+
+        return ":".join(
+            [
+                str(manual_meta.get("count") or 0),
+                iso(manual_meta.get("latest")),
+                str(grouped_meta.get("count") or 0),
+                iso(grouped_meta.get("latest")),
+            ]
+        )
+
+    def _insights_cache_key(self, user) -> str:
+        return f"stocks-module:portfolio-insights:v3:{user.id}:{self._holdings_signature(user)}"
+
+    def _portfolio_risk_cache_key(self, user) -> str:
+        return f"stocks-module:portfolio-risk:v1:{user.id}:{self._holdings_signature(user)}"
+
+    def _clear_user_caches(self, user_id: int):
+        # Signature-based cache keys refresh automatically when holdings change.
+        return None
+
     @transaction.atomic
     def add_to_portfolio(self, user, stock_id: int) -> dict:
         stock = (
@@ -128,6 +163,101 @@ class StocksPortfolioService:
             "sector_name": sector_name,
         }
 
+    def portfolio_risk_items(self, user) -> list[dict]:
+        cache_key = self._portfolio_risk_cache_key(user)
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        holdings = self._portfolio_holdings(user)
+        if not holdings:
+            cache.set(cache_key, [], self.INSIGHTS_CACHE_TIMEOUT_SECONDS)
+            return []
+
+        symbols = [item["symbol"] for item in holdings]
+        reference_map = {
+            row.symbol.upper(): row
+            for row in StockReference.objects.filter(symbol__in=symbols, is_active=True).only("symbol", "name", "risk_category", "exchange")
+        }
+        risk_service = RiskCategorizationService()
+        items = []
+
+        for holding in holdings:
+            reference = reference_map.get(holding["symbol"])
+            stored_risk = (getattr(reference, "risk_category", "") or "").strip().lower()
+            risk = stored_risk if stored_risk in {"low", "medium", "high"} else None
+
+            market_symbol = holding["market_symbol"] or self._market_symbol_from_reference(holding["symbol"], reference)
+            if risk is None and market_symbol:
+                try:
+                    risk_payload = risk_service.classify(market_symbol)
+                    live_risk = (risk_payload.get("risk_category") or "").strip().lower()
+                    risk = live_risk if live_risk in {"low", "medium", "high"} else None
+                except Exception:
+                    risk = None
+
+            items.append(
+                {
+                    "symbol": holding["symbol"],
+                    "stock_name": holding["stock_name"] or getattr(reference, "name", None) or holding["symbol"],
+                    "market_symbol": market_symbol or holding["symbol"],
+                    "risk": risk.title() if risk else "Unknown",
+                }
+            )
+
+        cache.set(cache_key, items, self.INSIGHTS_CACHE_TIMEOUT_SECONDS)
+        return items
+
+    def _portfolio_holdings(self, user) -> list[dict]:
+        manual = list(
+            PortfolioStock.objects.filter(user=user)
+            .select_related("portfolio_type")
+            .order_by("symbol")
+        )
+        grouped = list(
+            PortfolioEntry.objects.filter(user=user)
+            .select_related("stock", "sector", "sector__market")
+            .order_by("stock__symbol")
+        )
+
+        holdings: dict[str, dict] = {}
+
+        for item in manual:
+            symbol = item.symbol.upper()
+            holdings[symbol] = {
+                "symbol": symbol,
+                "stock_name": item.company_name or symbol,
+                "market_symbol": self._default_market_symbol(symbol),
+            }
+
+        for item in grouped:
+            symbol = item.stock.symbol.upper()
+            market_symbol = self._market_symbol(item.stock)
+            if symbol in holdings:
+                if not holdings[symbol].get("market_symbol"):
+                    holdings[symbol]["market_symbol"] = market_symbol
+                if not holdings[symbol].get("stock_name"):
+                    holdings[symbol]["stock_name"] = item.stock.name or symbol
+                continue
+            holdings[symbol] = {
+                "symbol": symbol,
+                "stock_name": item.stock.name or symbol,
+                "market_symbol": market_symbol,
+            }
+
+        return list(holdings.values())
+
+    def _default_market_symbol(self, symbol: str) -> str:
+        normalized = symbol.upper().strip()
+        if "." in normalized or "=" in normalized or "^" in normalized:
+            return normalized
+        return f"{normalized}.NS"
+
+    def _market_symbol_from_reference(self, symbol: str, reference: StockReference | None) -> str:
+        if reference and (reference.exchange or "").strip().upper() == "NSE":
+            return self._default_market_symbol(symbol)
+        return symbol.upper().strip()
+
     def grouped_portfolio(self, user) -> list[dict]:
         entries = list(
             PortfolioEntry.objects.filter(user=user)
@@ -160,7 +290,7 @@ class StocksPortfolioService:
         return list(grouped.values())
 
     def portfolio_insights(self, user) -> dict:
-        cache_key = f"stocks-module:portfolio-insights:{user.id}"
+        cache_key = self._insights_cache_key(user)
         cached = cache.get(cache_key)
         if cached is not None:
             return cached
@@ -180,22 +310,24 @@ class StocksPortfolioService:
             return payload
 
         market_data = MarketDataService()
-        risk_service = RiskCategorizationService()
         risk_breakdown = {"low": 0, "medium": 0, "high": 0}
         movers = []
+        risk_items = {
+            item["symbol"]: item
+            for item in self.portfolio_risk_items(user)
+        }
+
+        for item in risk_items.values():
+            normalized_risk = (item.get("risk") or "").strip().lower()
+            if normalized_risk in risk_breakdown:
+                risk_breakdown[normalized_risk] += 1
 
         for entry in entries:
             symbol = entry.stock.symbol
             market_symbol = self._market_symbol(entry.stock)
-
-            try:
-                risk_payload = risk_service.classify(market_symbol)
-                risk_category = risk_payload.get("risk_category", "medium")
-            except Exception:
-                risk_category = "medium"
-            if risk_category not in risk_breakdown:
-                risk_category = "medium"
-            risk_breakdown[risk_category] += 1
+            risk_category = (risk_items.get(symbol, {}).get("risk") or "").strip().lower()
+            if risk_category not in {"low", "medium", "high"}:
+                risk_category = "unknown"
 
             try:
                 snapshot = market_data.get_ticker_snapshot(market_symbol)
@@ -230,11 +362,15 @@ class StocksPortfolioService:
             )
 
         ranked_movers = [item for item in movers if item["change_pct"] is not None]
-        ranked_movers.sort(key=lambda item: item["change_pct"], reverse=True)
+        ranked_gainers = [item for item in sorted(ranked_movers, key=lambda item: item["change_pct"], reverse=True) if item["change_pct"] > 0]
+        ranked_losers = [item for item in sorted(ranked_movers, key=lambda item: item["change_pct"]) if item["change_pct"] < 0]
+        top_gainers = ranked_gainers[:1]
+        primary_gainer_id = top_gainers[0]["entry_id"] if top_gainers else None
+        top_losers = [item for item in ranked_losers if item["entry_id"] != primary_gainer_id][:1]
         payload = {
             "risk_breakdown": risk_breakdown,
-            "top_gainers": ranked_movers[:3],
-            "top_losers": list(reversed(ranked_movers[-3:])),
+            "top_gainers": top_gainers,
+            "top_losers": top_losers,
         }
         cache.set(cache_key, payload, self.INSIGHTS_CACHE_TIMEOUT_SECONDS)
         return payload

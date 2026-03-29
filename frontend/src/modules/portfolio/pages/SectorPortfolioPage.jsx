@@ -2,23 +2,31 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { portfolioApi } from "../services/portfolioApi";
+import { QualityResearchModal } from "../../quality-stocks/components/QualityResearchModal";
 
 export function SectorPortfolioPage() {
   const navigate = useNavigate();
   const { sectorName } = useParams();
   const decodedSectorName = decodeURIComponent(sectorName);
   const [groupedPortfolio, setGroupedPortfolio] = useState([]);
+  const [portfolioTypes, setPortfolioTypes] = useState([]);
   const [removingEntryId, setRemovingEntryId] = useState(null);
+  const [showResearchModal, setShowResearchModal] = useState(false);
   const [error, setError] = useState("");
 
   async function load() {
     try {
-      const groupedData = await portfolioApi.groupedSectorPortfolio();
+      const [groupedData, typeData] = await Promise.all([
+        portfolioApi.groupedSectorPortfolio(),
+        portfolioApi.listTypes(),
+      ]);
       setGroupedPortfolio(Array.isArray(groupedData) ? groupedData : []);
+      setPortfolioTypes(Array.isArray(typeData) ? typeData : []);
       setError("");
     } catch (err) {
       setError(err.message);
       setGroupedPortfolio([]);
+      setPortfolioTypes([]);
     }
   }
 
@@ -30,6 +38,15 @@ export function SectorPortfolioPage() {
     () => groupedPortfolio.find((group) => group.sector.name === decodedSectorName) || null,
     [decodedSectorName, groupedPortfolio],
   );
+
+  const linkedPortfolioType = useMemo(() => {
+    const normalizedSector = String(decodedSectorName || "").trim().toLowerCase();
+    return (
+      portfolioTypes.find((item) => String(item?.sector_name || "").trim().toLowerCase() === normalizedSector) ||
+      portfolioTypes.find((item) => String(item?.name || "").trim().toLowerCase() === normalizedSector) ||
+      null
+    );
+  }, [decodedSectorName, portfolioTypes]);
 
   async function handleRemove(event, entryId) {
     event.stopPropagation();
@@ -70,7 +87,16 @@ export function SectorPortfolioPage() {
       </section>
 
       <section className="panel">
-        <h3>Stocks</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+          <h3 style={{ margin: 0 }}>Stocks</h3>
+          <button
+            type="button"
+            onClick={() => setShowResearchModal(true)}
+            disabled={!sectorGroup?.items?.length}
+          >
+            Research
+          </button>
+        </div>
         {!sectorGroup?.items?.length ? (
           <p className="muted">No stocks added in this sector yet.</p>
         ) : (
@@ -119,6 +145,16 @@ export function SectorPortfolioPage() {
           </div>
         )}
       </section>
+
+      <QualityResearchModal
+        isOpen={showResearchModal}
+        portfolioId={linkedPortfolioType?.id || null}
+        portfolioName={linkedPortfolioType?.name || decodedSectorName}
+        sectorName={decodedSectorName}
+        sectorId={sectorGroup?.sector?.id || null}
+        forceSectorMode
+        onClose={() => setShowResearchModal(false)}
+      />
     </>
   );
 }

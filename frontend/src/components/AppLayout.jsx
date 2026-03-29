@@ -11,6 +11,7 @@ export function AppLayout() {
   const navItems = [
     { to: "/stocks", label: "Stocks", description: "Curated market browser" },
     { to: "/portfolio", label: "Portfolio", description: "Sector and holdings view" },
+    { to: "/quality-stocks", label: "Quality Stocks", description: "AI research reports" },
     { to: "/compare", label: "Compare", description: "Side-by-side stock analysis" },
     { to: "/risk", label: "Risk", description: "Stability and exposure signals" },
     { to: "/clustering", label: "Clustering", description: "Portfolio grouping insights" },

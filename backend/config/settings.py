@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "apps.recommendations_module",
     "apps.commodities_module",
     "apps.crypto_module",
+    "apps.quality_stocks_module",
     "apps.assistant_module",
 ]
 

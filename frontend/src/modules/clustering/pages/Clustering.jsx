@@ -99,7 +99,7 @@ export function ClusteringPage() {
             </p>
             <h1 style={{ marginBottom: 8 }}>Stock Clustering</h1>
             <p className="muted" style={{ margin: 0, maxWidth: 760 }}>
-              Explore up to 20 stocks using normalized return, volatility, volume, PE ratio, and market-cap features.
+              Explore the stocks in your portfolio using normalized return, volatility, volume, PE ratio, and market-cap features.
             </p>
           </div>
 
@@ -196,7 +196,7 @@ export function ClusteringPage() {
         ) : error ? (
           <p style={{ margin: 0, color: "#c05353" }}>{error}</p>
         ) : points.length < 2 ? (
-          <p className="muted" style={{ margin: 0 }}>Not enough stock data was available to build clusters.</p>
+          <p className="muted" style={{ margin: 0 }}>Add at least two portfolio stocks with sufficient history to build clusters.</p>
         ) : (
           <>
             <div style={{ marginBottom: 18 }}>

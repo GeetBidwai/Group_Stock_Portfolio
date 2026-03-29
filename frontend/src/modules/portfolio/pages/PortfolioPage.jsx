@@ -122,6 +122,22 @@ export function PortfolioPage() {
               <p className="muted" style={{ margin: 0 }}>Insights</p>
               <p style={{ margin: "6px 0 0", fontSize: 18, fontWeight: 700 }}>Recommendations</p>
             </button>
+            <button
+              type="button"
+              onClick={() => navigate("/quality-stocks")}
+              style={{
+                minWidth: 220,
+                padding: "16px 18px",
+                borderRadius: 20,
+                background: "linear-gradient(135deg, rgba(17, 75, 95, 0.08), rgba(123, 110, 230, 0.12))",
+                border: "1px solid rgba(17, 75, 95, 0.08)",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              <p className="muted" style={{ margin: 0 }}>Portfolio</p>
+              <p style={{ margin: "6px 0 0", fontSize: 18, fontWeight: 700 }}>Analyze Quality Stocks</p>
+            </button>
             <div
               style={{
                 minWidth: 220,
@@ -224,9 +240,9 @@ export function PortfolioPage() {
 
           <div style={{ display: "grid", gap: 18, marginTop: 20 }}>
             <div>
-              <h4 style={{ margin: "0 0 10px" }}>Top Gainers</h4>
+              <h4 style={{ margin: "0 0 10px" }}>Top Gainer</h4>
               {!insights.top_gainers?.length ? (
-                <p className="muted" style={{ margin: 0 }}>No mover data yet.</p>
+                <p className="muted" style={{ margin: 0 }}>No positive mover right now.</p>
               ) : (
                 <div style={{ display: "grid", gap: 10 }}>
                   {insights.top_gainers.map((item) => (
@@ -261,9 +277,9 @@ export function PortfolioPage() {
             </div>
 
             <div>
-              <h4 style={{ margin: "0 0 10px" }}>Top Losers</h4>
+              <h4 style={{ margin: "0 0 10px" }}>Top Loser</h4>
               {!insights.top_losers?.length ? (
-                <p className="muted" style={{ margin: 0 }}>No mover data yet.</p>
+                <p className="muted" style={{ margin: 0 }}>No negative mover right now.</p>
               ) : (
                 <div style={{ display: "grid", gap: 10 }}>
                   {insights.top_losers.map((item) => (

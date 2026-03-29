@@ -24,16 +24,9 @@ class StockClusterPoint:
 
 
 class StockClusteringService:
-    MAX_STOCKS = 20
     DEFAULT_K = 3
     DEFAULT_METHOD = "pca"
     CACHE_TIMEOUT_SECONDS = 1800
-    FALLBACK_SYMBOLS = [
-        "TCS", "INFY", "RELIANCE", "HDFCBANK", "ICICIBANK",
-        "SBIN", "LT", "ITC", "HINDUNILVR", "AXISBANK",
-        "BHARTIARTL", "KOTAKBANK", "ASIANPAINT", "MARUTI", "SUNPHARMA",
-        "WIPRO", "ULTRACEMCO", "TITAN", "BAJFINANCE", "NTPC",
-    ]
 
     def __init__(self):
         self.market_data = MarketDataService()
@@ -68,14 +61,11 @@ class StockClusteringService:
         if portfolio_id:
             queryset = queryset.filter(portfolio_type_id=portfolio_id)
 
-        symbols = list(dict.fromkeys(queryset.values_list("symbol", flat=True)))[: self.MAX_STOCKS]
-        if symbols:
-            return symbols
-        return self.FALLBACK_SYMBOLS[: self.MAX_STOCKS]
+        return list(dict.fromkeys(queryset.values_list("symbol", flat=True)))
 
     def _build_feature_frame(self, symbols: list[str]) -> pd.DataFrame:
         rows = []
-        for symbol in symbols[: self.MAX_STOCKS]:
+        for symbol in symbols:
             row = self._build_feature_row(symbol)
             if row is not None:
                 rows.append(row)

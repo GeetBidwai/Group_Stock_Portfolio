@@ -20,6 +20,8 @@ import { SentimentPage } from "../modules/sentiment/pages/SentimentPage";
 import { CommoditiesPage } from "../modules/commodities/pages/CommoditiesPage";
 import { CryptoPage } from "../modules/crypto/pages/CryptoPage";
 import { BTCForecastPage } from "../modules/crypto/pages/BTCForecastPage";
+import { QualityStocksPage } from "../pages/QualityStocks";
+import { QualityStockReportPage } from "../pages/QualityStockReport";
 
 export function AppRouter() {
   return (
@@ -32,6 +34,8 @@ export function AppRouter() {
             <Route path="/" element={<Navigate to="/stocks" replace />} />
             <Route path="/stocks" element={<StocksPage />} />
             <Route path="/portfolio" element={<PortfolioPage />} />
+            <Route path="/quality-stocks" element={<QualityStocksPage />} />
+            <Route path="/quality-stocks/:id" element={<QualityStockReportPage />} />
             <Route path="/portfolio/analysis" element={<PortfolioAnalysisPage />} />
             <Route path="/portfolio/sector/:sectorName" element={<SectorPortfolioPage />} />
             <Route path="/portfolio/:id" element={<PortfolioDetailPage />} />

@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { PEChart } from "../components/PEChart";
 import { StockAutocomplete } from "../components/StockAutocomplete";
 import { portfolioApi } from "../services/portfolioApi";
+import { QualityResearchModal } from "../../quality-stocks/components/QualityResearchModal";
 
 export function PortfolioDetailPage() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export function PortfolioDetailPage() {
   const [portfolioAnalytics, setPortfolioAnalytics] = useState({ items: [], pe_items: [], portfolio_average_pe: null });
   const [selectedStock, setSelectedStock] = useState(null);
   const [showAddStockForm, setShowAddStockForm] = useState(false);
+  const [showResearchModal, setShowResearchModal] = useState(false);
   const [stockForm, setStockForm] = useState({ symbol: "", company_name: "", quantity: 1, average_buy_price: "" });
   const [error, setError] = useState("");
 
@@ -82,9 +84,14 @@ export function PortfolioDetailPage() {
       <section className="panel">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <h3 style={{ margin: 0 }}>Stocks</h3>
-          <button className="btn" type="button" onClick={() => setShowAddStockForm((current) => !current)}>
-            + Add Stock
-          </button>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => setShowResearchModal(true)}>
+              Research
+            </button>
+            <button className="btn" type="button" onClick={() => setShowAddStockForm((current) => !current)}>
+              + Add Stock
+            </button>
+          </div>
         </div>
 
         {showAddStockForm && (
@@ -226,6 +233,13 @@ export function PortfolioDetailPage() {
           </div>
         )}
       </section>
+
+      <QualityResearchModal
+        isOpen={showResearchModal}
+        portfolioId={portfolioId}
+        portfolioName={portfolio?.name}
+        onClose={() => setShowResearchModal(false)}
+      />
     </>
   );
 }

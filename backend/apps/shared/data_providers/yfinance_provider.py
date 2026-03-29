@@ -45,7 +45,7 @@ class YFinanceMarketDataProvider(MarketDataProvider):
     def _normalize_symbol(self, symbol: str) -> str:
         symbol = symbol.upper().strip()
         symbol = self.symbol_aliases.get(symbol, symbol)
-        if "." in symbol or "=" in symbol or "-" in symbol or "^" in symbol:
+        if "." in symbol or "=" in symbol or "^" in symbol:
             return symbol
         return f"{symbol}{self.default_suffix}"
 
@@ -80,7 +80,7 @@ class YFinanceMarketDataProvider(MarketDataProvider):
         normalized = self._normalize_symbol(symbol)
         base_symbol = aliased_symbol
         candidates = [normalized, base_symbol]
-        if "." not in base_symbol and "=" not in base_symbol and "-" not in base_symbol and "^" not in base_symbol:
+        if "." not in base_symbol and "=" not in base_symbol and "^" not in base_symbol:
             candidates.extend([f"{base_symbol}.NS", f"{base_symbol}.BO"])
         if aliased_symbol != raw_symbol:
             candidates.extend([raw_symbol, f"{raw_symbol}.NS", f"{raw_symbol}.BO"])
