@@ -17,5 +17,6 @@ export const portfolioApi = {
   portfolioForecast: (payload) => apiClient.post("/stock/portfolio-forecast-next-day", payload),
   groupedSectorPortfolio: () => apiClient.get("/portfolio/"),
   portfolioInsights: () => apiClient.get("/portfolio/insights/"),
+  portfolioRiskList: () => apiClient.get("/stocks/risk/?scope=portfolio"),
   removeGroupedSectorEntry: (entryId) => apiClient.delete(`/portfolio/entries/${entryId}/`),
 };

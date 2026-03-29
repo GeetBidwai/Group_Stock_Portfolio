@@ -1,21 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
+import { qualityStocksApi } from "../quality-stocks/services/qualityStocksApi";
 import { SectorList } from "./SectorList";
-import { StockList } from "./StockList";
 import { stocksService } from "./stocksService";
 
 export function StocksPage() {
+  const navigate = useNavigate();
   const [markets, setMarkets] = useState([]);
   const [selectedMarket, setSelectedMarket] = useState("");
   const [sectors, setSectors] = useState([]);
-  const [selectedSectorId, setSelectedSectorId] = useState(null);
-  const [stocksPayload, setStocksPayload] = useState({ sector: null, items: [] });
+  const [qualityReports, setQualityReports] = useState([]);
   const [loadingMarkets, setLoadingMarkets] = useState(true);
   const [loadingSectors, setLoadingSectors] = useState(false);
-  const [loadingStocks, setLoadingStocks] = useState(false);
-  const [pendingStockId, setPendingStockId] = useState(null);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -53,7 +51,6 @@ export function StocksPage() {
   useEffect(() => {
     if (!selectedMarket) {
       setSectors([]);
-      setSelectedSectorId(null);
       return;
     }
 
@@ -68,14 +65,11 @@ export function StocksPage() {
         }
         const nextSectors = Array.isArray(data) ? data : [];
         setSectors(nextSectors);
-        setSelectedSectorId(nextSectors[0]?.id ?? null);
         setError("");
-        setSuccess("");
       } catch (err) {
         if (!cancelled) {
           setError(err.message);
           setSectors([]);
-          setSelectedSectorId(null);
         }
       } finally {
         if (!cancelled) {
@@ -91,60 +85,45 @@ export function StocksPage() {
   }, [selectedMarket]);
 
   useEffect(() => {
-    if (!selectedSectorId) {
-      setStocksPayload({ sector: null, items: [] });
-      return;
-    }
-
     let cancelled = false;
 
-    async function loadStocks() {
+    async function loadQualityReports() {
       try {
-        setLoadingStocks(true);
-        const data = await stocksService.listStocks(selectedSectorId);
-        if (cancelled) {
-          return;
-        }
-        setStocksPayload({
-          sector: data?.sector || null,
-          items: Array.isArray(data?.items) ? data.items : [],
-        });
-        setError("");
-      } catch (err) {
+        const data = await qualityStocksApi.list();
         if (!cancelled) {
-          setError(err.message);
-          setStocksPayload({ sector: null, items: [] });
+          setQualityReports(Array.isArray(data) ? data : []);
         }
-      } finally {
+      } catch (_err) {
         if (!cancelled) {
-          setLoadingStocks(false);
+          setQualityReports([]);
         }
       }
     }
 
-    loadStocks();
+    loadQualityReports();
     return () => {
       cancelled = true;
     };
-  }, [selectedSectorId]);
+  }, []);
 
   const selectedMarketLabel = useMemo(
     () => markets.find((market) => market.code === selectedMarket)?.name || "Stocks",
     [markets, selectedMarket],
   );
 
-  async function handleAddToPortfolio(stockId) {
-    try {
-      setPendingStockId(stockId);
-      setError("");
-      const payload = await stocksService.addToPortfolio(stockId);
-      setSuccess(payload.message || "Stock added to portfolio.");
-    } catch (err) {
-      setError(err.message);
-      setSuccess("");
-    } finally {
-      setPendingStockId(null);
-    }
+  const sectorCards = useMemo(
+    () =>
+      sectors.map((sector) => ({
+        ...sector,
+        qualityCount: qualityReports.filter(
+          (item) => String(item.portfolio_name || "").trim().toLowerCase() === String(sector.name || "").trim().toLowerCase(),
+        ).length,
+      })),
+    [qualityReports, sectors],
+  );
+
+  function handleOpenSector(sector) {
+    navigate(`/stocks/sector/${sector.id}`);
   }
 
   return (
@@ -172,23 +151,14 @@ export function StocksPage() {
           </label>
         </div>
         {error ? <p style={{ color: "#c05353", marginBottom: 0 }}>{error}</p> : null}
-        {success ? <p style={{ color: "var(--accent-soft)", marginBottom: 0 }}>{success}</p> : null}
       </section>
 
-      <section className="grid two">
+      <section>
         <SectorList
           loading={loadingMarkets || loadingSectors}
-          sectors={sectors}
-          selectedSectorId={selectedSectorId}
+          sectors={sectorCards}
           marketLabel={selectedMarketLabel}
-          onSelect={setSelectedSectorId}
-        />
-        <StockList
-          loading={loadingStocks}
-          sector={stocksPayload.sector}
-          items={stocksPayload.items}
-          pendingStockId={pendingStockId}
-          onAddToPortfolio={handleAddToPortfolio}
+          onOpenSector={handleOpenSector}
         />
       </section>
     </>

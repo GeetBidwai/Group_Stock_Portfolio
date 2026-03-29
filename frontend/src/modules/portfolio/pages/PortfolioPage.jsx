@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import { RecommendationModal } from "../../recommendations/components/RecommendationModal";
+import { qualityStocksApi } from "../../quality-stocks/services/qualityStocksApi";
 import { portfolioApi } from "../services/portfolioApi";
 
 const CHART_COLORS = ["#167c80", "#28b8b0", "#77c9e3", "#f2bf5e", "#ef6f6c", "#7b6ee6"];
@@ -30,9 +31,21 @@ function formatPrice(value) {
   }).format(value);
 }
 
+function sectorIcon(name) {
+  if (name.includes("Bank")) return "🏦";
+  if (name.includes("Energy")) return "⚡";
+  if (name.includes("Auto")) return "🚗";
+  if (name.includes("Metal")) return "⛏️";
+  if (name.includes("IT")) return "💻";
+  if (name.includes("MNC")) return "🚀";
+  if (name.includes("Media")) return "📺";
+  return "📊";
+}
+
 export function PortfolioPage() {
   const navigate = useNavigate();
   const [groupedPortfolio, setGroupedPortfolio] = useState([]);
+  const [qualityReports, setQualityReports] = useState([]);
   const [insights, setInsights] = useState({
     risk_breakdown: { low: 0, medium: 0, high: 0 },
     top_gainers: [],
@@ -43,11 +56,13 @@ export function PortfolioPage() {
 
   async function load() {
     try {
-      const [groupedData, insightsData] = await Promise.all([
+      const [groupedData, insightsData, qualityData] = await Promise.all([
         portfolioApi.groupedSectorPortfolio(),
         portfolioApi.portfolioInsights(),
+        qualityStocksApi.list(),
       ]);
       setGroupedPortfolio(Array.isArray(groupedData) ? groupedData : []);
+      setQualityReports(Array.isArray(qualityData) ? qualityData : []);
       setInsights(
         insightsData || {
           risk_breakdown: { low: 0, medium: 0, high: 0 },
@@ -59,6 +74,7 @@ export function PortfolioPage() {
     } catch (err) {
       setError(err.message);
       setGroupedPortfolio([]);
+      setQualityReports([]);
     }
   }
 
@@ -75,15 +91,23 @@ export function PortfolioPage() {
     }));
   }, [groupedPortfolio]);
 
-  const sectorCards = useMemo(
-    () => groupedPortfolio.map((group) => ({
-      id: group.sector.id,
-      name: group.sector.name,
-      market: group.sector.market,
-      count: group.items.length,
-    })),
-    [groupedPortfolio],
-  );
+  const sectorCards = useMemo(() => {
+    const totalHoldings = groupedPortfolio.reduce((sum, group) => sum + group.items.length, 0) || 1;
+    return groupedPortfolio.map((group) => {
+      const qualityCount = qualityReports.filter(
+        (item) => String(item.portfolio_name || "").trim().toLowerCase() === String(group.sector.name || "").trim().toLowerCase(),
+      ).length;
+      return {
+        id: group.sector.id,
+        name: group.sector.name,
+        market: group.sector.market,
+        marketCode: group.sector.market_code || "IN",
+        count: group.items.length,
+        mixPercent: Math.round((group.items.length / totalHoldings) * 100),
+        qualityCount,
+      };
+    });
+  }, [groupedPortfolio, qualityReports]);
 
   const riskItems = useMemo(
     () => [
@@ -321,33 +345,125 @@ export function PortfolioPage() {
         {!sectorCards.length ? (
           <p className="muted">No sectors added yet.</p>
         ) : (
-          <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
             {sectorCards.map((sector) => (
-              <button
+              <article
                 key={sector.id}
-                type="button"
-                onClick={() => navigate(`/portfolio/sector/${encodeURIComponent(sector.name)}`)}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 16,
-                  padding: "16px 18px",
-                  borderRadius: 18,
+                  padding: "22px 22px 20px",
+                  borderRadius: 24,
                   border: "1px solid rgba(17, 75, 95, 0.08)",
-                  background: "rgba(255, 255, 255, 0.72)",
-                  cursor: "pointer",
+                  background: "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(243,247,255,0.92))",
+                  boxShadow: "0 12px 30px rgba(123, 110, 230, 0.08)",
                   textAlign: "left",
+                  display: "grid",
+                  gap: 16,
                 }}
               >
-                <div>
-                  <p style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{sector.name}</p>
-                  <p className="muted" style={{ margin: "6px 0 0" }}>
-                    {sector.count} stock{sector.count === 1 ? "" : "s"} · {sector.market}
-                  </p>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start" }}>
+                  <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                    <div
+                      style={{
+                        width: 58,
+                        height: 58,
+                        borderRadius: 18,
+                        background: "linear-gradient(135deg, rgba(123, 110, 230, 0.16), rgba(119, 201, 227, 0.2))",
+                        display: "grid",
+                        placeItems: "center",
+                        fontSize: 28,
+                      }}
+                    >
+                      {sectorIcon(sector.name)}
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                        <p style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{sector.name}</p>
+                        <span
+                          className="muted"
+                          style={{
+                            padding: "4px 8px",
+                            borderRadius: 999,
+                            background: "rgba(17, 75, 95, 0.06)",
+                            fontSize: 12,
+                            fontWeight: 700,
+                          }}
+                        >
+                          [{sector.marketCode}]
+                        </span>
+                        <span
+                          style={{
+                            padding: "4px 8px",
+                            borderRadius: 999,
+                            background: "rgba(123, 110, 230, 0.10)",
+                            color: "#6a5be2",
+                            fontSize: 12,
+                            fontWeight: 700,
+                          }}
+                        >
+                          QS: {sector.qualityCount}
+                        </span>
+                      </div>
+                      <p className="muted" style={{ margin: "6px 0 0" }}>
+                        {sector.market} sector holdings from your portfolio.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <span style={{ fontSize: 20 }}>&rarr;</span>
-              </button>
+
+                <div
+                  style={{
+                    padding: "14px 16px",
+                    borderRadius: 18,
+                    background: "rgba(255, 255, 255, 0.78)",
+                    border: "1px solid rgba(17, 75, 95, 0.06)",
+                    display: "grid",
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                    <span className="muted" style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em" }}>PORTFOLIO COVERAGE</span>
+                    <strong style={{ color: "#c28719" }}>{sector.mixPercent}% mix</strong>
+                  </div>
+                  <div style={{ height: 6, borderRadius: 999, background: "rgba(17, 75, 95, 0.08)", overflow: "hidden" }}>
+                    <div
+                      style={{
+                        width: `${sector.mixPercent}%`,
+                        height: "100%",
+                        background: "linear-gradient(90deg, #f59f00, #f2bf5e)",
+                        borderRadius: 999,
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                    <span className="muted">Coverage: {sector.count}/{sector.count} stocks</span>
+                    <span className="muted">Quality: {sector.qualityCount}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/portfolio/sector/${encodeURIComponent(sector.name)}`)}
+                    style={{ flex: "1 1 160px" }}
+                  >
+                    Open Stocks →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/quality-stocks?portfolio=${encodeURIComponent(`sector:${sector.id}`)}`)}
+                    style={{ flex: "0 1 120px" }}
+                  >
+                    Quality ({sector.qualityCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/clustering")}
+                    style={{ flex: "0 1 100px" }}
+                  >
+                    Clusters
+                  </button>
+                </div>
+              </article>
             ))}
           </div>
         )}

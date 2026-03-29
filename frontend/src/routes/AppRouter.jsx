@@ -5,6 +5,7 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { LoginPage } from "../modules/auth/pages/LoginPage";
 import { SignupPage } from "../modules/auth/pages/SignupPage";
 import { StocksPage } from "../modules/stocks";
+import { SectorStocksPage } from "../modules/stocks/SectorStocksPage";
 import { PortfolioPage } from "../modules/portfolio/pages/PortfolioPage";
 import { PortfolioAnalysisPage } from "../modules/portfolio/pages/PortfolioAnalysisPage";
 import { StockDetailPage as PortfolioStockDetailPage } from "../modules/portfolio/pages/StockDetail";
@@ -33,6 +34,7 @@ export function AppRouter() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<Navigate to="/stocks" replace />} />
             <Route path="/stocks" element={<StocksPage />} />
+            <Route path="/stocks/sector/:sectorId" element={<SectorStocksPage />} />
             <Route path="/portfolio" element={<PortfolioPage />} />
             <Route path="/quality-stocks" element={<QualityStocksPage />} />
             <Route path="/quality-stocks/:id" element={<QualityStockReportPage />} />
