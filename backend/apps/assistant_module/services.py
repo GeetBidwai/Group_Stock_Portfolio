@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 import logging
 import re
 
@@ -130,6 +131,7 @@ class PersonalAssistantService:
 
     def _direct_reply(self, user, message: str, holdings: list[dict]) -> str | None:
         text = message.strip().lower()
+        normalized_text = self._normalize_text(text)
         if not text:
             return "Ask me about your portfolio, holdings, comparison, risk view, or forecast."
 
@@ -137,30 +139,105 @@ class PersonalAssistantService:
         if small_talk:
             return small_talk
 
-        if "what can you do" in text or text in {"help", "help me"}:
+        capability_reply = self._capability_reply(normalized_text)
+        if capability_reply:
+            return capability_reply
+
+        if "what can you do" in normalized_text or normalized_text in {"help", "help me"}:
             return self._default_reply(holdings)
 
-        if ("portfolio" in text or "holdings" in text or "stocks do i have" in text) and any(
-            phrase in text for phrase in {"what", "show", "list", "which", "my"}
-        ):
+        if self._is_portfolio_list_question(normalized_text):
             return self._portfolio_list_reply(holdings)
 
-        if ("how many" in text or "count" in text) and ("stock" in text or "holding" in text or "portfolio" in text):
+        if any(phrase in normalized_text for phrase in {"how many", "count"}) and any(
+            word in normalized_text for word in {"stock", "holding", "portfolio"}
+        ):
             return self._portfolio_count_reply(holdings)
 
-        if "sector" in text:
+        if "sector" in normalized_text:
             return self._sector_reply(holdings)
 
-        if any(phrase in text for phrase in {"top gainer", "best performer", "top performer", "top loser", "worst performer", "risk"}):
-            return self._insights_reply(user, text)
+        if any(
+            phrase in normalized_text
+            for phrase in {"top gainer", "best performer", "top performer", "top loser", "worst performer", "risk"}
+        ):
+            return self._insights_reply(user, normalized_text)
 
-        if "compare" in text:
-            return self._compare_reply(user, text, holdings)
+        if self._looks_like_compare(normalized_text):
+            return self._compare_reply(user, normalized_text, holdings)
 
-        if any(word in text for word in {"forecast", "prediction", "predict"}):
-            return self._forecast_reply(text, holdings)
+        if self._looks_like_forecast(normalized_text):
+            return self._forecast_reply(normalized_text, holdings)
 
         return None
+
+    def _capability_reply(self, text: str) -> str | None:
+        capability_map = [
+            (
+                {"can i create my own portfolio here", "create my own portfolio", "can i make my own portfolio"},
+                "Yes. You can create and manage your own portfolio here by adding stocks and then using the portfolio analytics features.",
+            ),
+            (
+                {"does the platform support stock comparison", "can you compare stocks", "do you support stock comparison"},
+                "Yes. The platform supports stock comparison and can compare selected stocks using return, volatility, and related insights.",
+            ),
+            (
+                {"can i check stock risk on this platform", "do you support risk analysis", "can i see risk"},
+                "Yes. The platform includes risk analysis features for stocks and portfolio risk breakdowns.",
+            ),
+            (
+                {"does the platform offer stock price forecasting", "do you support forecasting", "can i see forecast"},
+                "Yes. The platform supports stock forecasting and forecast-style insights for selected stocks.",
+            ),
+            (
+                {"can i see news based stock sentiment", "show sentiment support", "do you support sentiment"},
+                "Yes. The platform includes a sentiment module that analyzes recent news and shows overall stock sentiment.",
+            ),
+            (
+                {"can i analyze gold and silver here", "do you support gold and silver", "is gold and silver available"},
+                "Yes. The platform includes gold and silver analytics with trend, forecast, and correlation views.",
+            ),
+            (
+                {"does the platform support btc analysis", "do you support bitcoin", "is btc forecast available"},
+                "Yes. The platform includes BTC analysis and forecasting features.",
+            ),
+            (
+                {"what is this platform used for", "what can i do here", "what does this platform do"},
+                "This platform is used for stock analytics, portfolio tracking, comparison, risk insights, forecasting, sentiment analysis, commodities analysis, BTC forecasting, and assistant-based guidance.",
+            ),
+        ]
+
+        for phrases, reply in capability_map:
+            for phrase in phrases:
+                if phrase in text:
+                    return reply
+        return None
+
+    def _is_portfolio_list_question(self, text: str) -> bool:
+        if any(
+            phrase in text
+            for phrase in {
+                "what is in my portfolio",
+                "what's in my portfolio",
+                "show my portfolio",
+                "list my portfolio",
+                "which stocks do i have",
+                "what stocks do i have",
+                "show my holdings",
+                "list my holdings",
+                "my portfolio stocks",
+                "information about my portfolio",
+                "info about my portfolio",
+                "tell me about my portfolio",
+                "portfolio information",
+                "portfolio details",
+                "details about my portfolio",
+                "about my portfolio",
+            }
+        ):
+            return True
+
+        return "stocks do i have" in text
 
     def _small_talk_reply(self, text: str, holdings: list[dict]) -> str | None:
         if text in {"hi", "hello", "hey", "hii", "hola"}:
@@ -174,6 +251,9 @@ class PersonalAssistantService:
 
         if any(phrase in text for phrase in {"thanks", "thank you", "thx"}):
             return "You are welcome. I am here whenever you want to explore your portfolio or stock ideas."
+
+        if text in {"okay", "ok", "alright", "fine", "sure"}:
+            return "Alright. What would you like to explore next?"
 
         if any(phrase in text for phrase in {"who are you", "what are you", "introduce yourself"}):
             return (
@@ -328,7 +408,7 @@ class PersonalAssistantService:
     def _extract_symbols(self, text: str, holdings: list[dict]) -> list[str]:
         symbol_map = {item["symbol"].upper(): item for item in holdings}
         found: list[str] = []
-        normalized_text = re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
+        normalized_text = self._normalize_text(text.lower())
 
         for symbol, item in symbol_map.items():
             if re.search(rf"\b{re.escape(symbol.lower())}\b", text.lower()):
@@ -350,6 +430,62 @@ class PersonalAssistantService:
 
         token_matches = re.findall(r"\b[A-Za-z][A-Za-z0-9.&-]{1,14}\b", text.upper())
         return [token for token in token_matches if token in symbol_map]
+
+    def _normalize_text(self, text: str) -> str:
+        normalized = re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
+        tokens = [self._correct_token(token) for token in normalized.split()]
+        return " ".join(tokens)
+
+    def _correct_token(self, token: str) -> str:
+        corrections = {
+            "portfilio": "portfolio",
+            "portfoilo": "portfolio",
+            "portoflio": "portfolio",
+            "holdngs": "holdings",
+            "compar": "compare",
+            "comapre": "compare",
+            "compre": "compare",
+            "forcast": "forecast",
+            "forecst": "forecast",
+            "predction": "prediction",
+            "sentimant": "sentiment",
+            "comodities": "commodities",
+            "bitcion": "bitcoin",
+            "stok": "stock",
+            "stoks": "stocks",
+            "rsik": "risk",
+        }
+        if token in corrections:
+            return corrections[token]
+
+        vocabulary = [
+            "portfolio",
+            "holdings",
+            "compare",
+            "forecast",
+            "prediction",
+            "sentiment",
+            "commodities",
+            "bitcoin",
+            "stock",
+            "stocks",
+            "risk",
+            "sector",
+            "information",
+            "details",
+            "show",
+            "what",
+            "which",
+            "about",
+        ]
+        match = difflib.get_close_matches(token, vocabulary, n=1, cutoff=0.88)
+        return match[0] if match else token
+
+    def _looks_like_compare(self, text: str) -> bool:
+        return any(word in text for word in {"compare", "comparison", "versus", "vs"})
+
+    def _looks_like_forecast(self, text: str) -> bool:
+        return any(word in text for word in {"forecast", "prediction", "predict"})
 
     def _default_reply(self, holdings: list[dict]) -> str:
         if holdings:

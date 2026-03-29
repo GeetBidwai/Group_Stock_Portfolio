@@ -48,6 +48,66 @@ class PersonalAssistantChatToneTests(APITestCase):
         symbols = PersonalAssistantService()._extract_symbols("Compare ACC and Bajaj auto", holdings)
         self.assertEqual(symbols, ["ACC", "BAJAJ-AUTO"])
 
+    def test_capability_question_is_not_misread_as_portfolio_list(self):
+        from apps.assistant_module.services import PersonalAssistantService
+
+        response = PersonalAssistantService()._direct_reply(
+            user=None,
+            message="Can I create my own portfolio here?",
+            holdings=[{"symbol": "MOTHERSON", "name": "Samvardhana Motherson", "sector": "Auto"}],
+        )
+        self.assertIn("create and manage your own portfolio", response.lower())
+
+    def test_portfolio_list_question_still_returns_holdings(self):
+        from apps.assistant_module.services import PersonalAssistantService
+
+        response = PersonalAssistantService()._direct_reply(
+            user=None,
+            message="What is in my portfolio?",
+            holdings=[{"symbol": "MOTHERSON", "name": "Samvardhana Motherson", "sector": "Auto"}],
+        )
+        self.assertIn("you currently have 1 portfolio stocks", response.lower())
+
+    def test_acknowledgement_message_gets_natural_reply(self):
+        from apps.assistant_module.services import PersonalAssistantService
+
+        response = PersonalAssistantService()._direct_reply(user=None, message="okay", holdings=[])
+        self.assertIn("what would you like to explore next", response.lower())
+
+    def test_portfolio_info_phrase_returns_portfolio_summary(self):
+        from apps.assistant_module.services import PersonalAssistantService
+
+        response = PersonalAssistantService()._direct_reply(
+            user=None,
+            message="I want information about my portfolio",
+            holdings=[{"symbol": "MOTHERSON", "name": "Samvardhana Motherson", "sector": "Auto"}],
+        )
+        self.assertIn("you currently have 1 portfolio stocks", response.lower())
+
+    def test_typo_in_portfolio_is_handled(self):
+        from apps.assistant_module.services import PersonalAssistantService
+
+        response = PersonalAssistantService()._direct_reply(
+            user=None,
+            message="show my portfilio",
+            holdings=[{"symbol": "MOTHERSON", "name": "Samvardhana Motherson", "sector": "Auto"}],
+        )
+        self.assertIn("you currently have 1 portfolio stocks", response.lower())
+
+    def test_typo_in_compare_is_handled(self):
+        from apps.assistant_module.services import PersonalAssistantService
+
+        holdings = [
+            {"symbol": "ACC", "name": "ACC Ltd.", "sector": "Cement"},
+            {"symbol": "BAJAJ-AUTO", "name": "Bajaj Auto Ltd.", "sector": "Auto"},
+        ]
+        response = PersonalAssistantService()._direct_reply(
+            user=None,
+            message="compre ACC and Bajaj auto",
+            holdings=holdings,
+        )
+        self.assertIn("recognized acc and bajaj-auto", response.lower())
+
 
 class DetectIntentApiTests(APITestCase):
     def setUp(self):
