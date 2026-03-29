@@ -1,3 +1,5 @@
+import { Card } from "../../components/ui/Card";
+
 function formatPrice(value, currency) {
   if (value == null) {
     return "Unavailable";
@@ -11,8 +13,8 @@ function formatPrice(value, currency) {
 
 export function StockList({ loading, sector, items, pendingStockId, onAddToPortfolio }) {
   return (
-    <section className="panel">
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline", marginBottom: 16, flexWrap: "wrap" }}>
+    <Card>
+      <div className="card__header">
         <div>
           <h2 style={{ marginBottom: 6 }}>Stocks</h2>
           <p className="muted" style={{ margin: 0 }}>
@@ -26,7 +28,7 @@ export function StockList({ loading, sector, items, pendingStockId, onAddToPortf
       ) : !items.length ? (
         <p className="muted" style={{ margin: 0 }}>No stocks available for the selected sector.</p>
       ) : (
-        <div className="chart-panel" style={{ overflowX: "auto" }}>
+        <div className="chart-panel stocks-table-shell" style={{ overflowX: "auto" }}>
           <table className="table fin-table">
             <thead>
               <tr>
@@ -34,7 +36,7 @@ export function StockList({ loading, sector, items, pendingStockId, onAddToPortf
                 <th>Name</th>
                 <th>Exchange</th>
                 <th>Price</th>
-                <th style={{ width: 76 }}>Add</th>
+                <th style={{ width: 96 }}>Add</th>
               </tr>
             </thead>
             <tbody>
@@ -49,18 +51,10 @@ export function StockList({ loading, sector, items, pendingStockId, onAddToPortf
                       type="button"
                       onClick={() => onAddToPortfolio(item.id)}
                       disabled={pendingStockId === item.id}
-                      className="btn"
-                      style={{
-                        width: 40,
-                        height: 40,
-                        fontSize: 24,
-                        lineHeight: 1,
-                        opacity: pendingStockId === item.id ? 0.7 : 1,
-                        padding: 0,
-                      }}
+                      className="btn stocks-table__add-btn"
                       aria-label={`Add ${item.symbol} to portfolio`}
                     >
-                      +
+                      {pendingStockId === item.id ? "..." : "+"}
                     </button>
                   </td>
                 </tr>
@@ -69,6 +63,6 @@ export function StockList({ loading, sector, items, pendingStockId, onAddToPortf
           </table>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

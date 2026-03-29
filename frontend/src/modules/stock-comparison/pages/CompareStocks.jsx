@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+import { Card, ChartCard, MetricCard } from "../../../components/ui/Card";
 import { StockSelect } from "../components/StockSelect";
 import { compareStocksApi } from "../services/compareStocksApi";
 import "./../compare-stocks.css";
@@ -50,9 +51,7 @@ function StockCard({ title, stock, color, showPercentChange }) {
     <article className="compare-stock-card">
       <div className="compare-stock-card__meta">
         <div>
-          <p className="muted" style={{ marginTop: 0, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.12em", fontSize: 12 }}>
-            {title}
-          </p>
+          <p className="eyebrow">{title}</p>
           <h2 style={{ marginTop: 0, marginBottom: 0 }}>{stock.symbol}</h2>
         </div>
         <span className="compare-stock-card__badge" style={{ background: color }}>
@@ -168,9 +167,10 @@ export function CompareStocksPage() {
 
   return (
     <div className="compare-dashboard">
-      <section className="panel">
+      <Card>
         <div className="compare-toolbar">
           <div>
+            <p className="eyebrow">Compare Studio</p>
             <h1 style={{ marginTop: 0, marginBottom: 8 }}>Compare Stocks</h1>
             <p className="muted" style={{ margin: 0 }}>
               Build a side-by-side performance view using only stocks from your own portfolio.
@@ -223,55 +223,81 @@ export function CompareStocksPage() {
             </label>
           </div>
 
-          <div>
+          <div className="compare-actions">
             <button className="btn" type="button" onClick={handleCompare}>
               {loading ? "Comparing..." : "Compare"}
             </button>
           </div>
         </div>
-        {error && <p style={{ color: "#c05353", marginBottom: 0 }}>{error}</p>}
-      </section>
+        {error ? <p className="form-error">{error}</p> : null}
+      </Card>
 
       {result && (
         <>
-          <section className="panel">
-            <h2 style={{ marginTop: 0 }}>Comparison Chart</h2>
-            <div style={{ height: 380 }}>
+          <div className="compare-summary-grid">
+            <MetricCard label="Range" value={range.toUpperCase()} meta="Selected comparison window" tone="primary" />
+            <MetricCard label="Stock A" value={result.stockA.symbol} meta={formatPercent(result.stockA.return_pct)} tone="primary" />
+            <MetricCard label="Stock B" value={result.stockB.symbol} meta={formatPercent(result.stockB.return_pct)} tone="success" />
+          </div>
+
+          <ChartCard
+            className="compare-chart-card"
+            title="Comparison Chart"
+            description="The chart is now the visual focus, with softer lines and lighter grid styling."
+          >
+            <div style={{ height: 420 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 16, right: 24, bottom: 8, left: 8 }}>
-                  <CartesianGrid stroke="rgba(17, 75, 95, 0.08)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#5f6b6d" }} tickLine={false} axisLine={{ stroke: "rgba(23, 33, 33, 0.24)" }} />
+                <LineChart data={chartData} margin={{ top: 16, right: 20, bottom: 8, left: 8 }}>
+                  <CartesianGrid stroke="rgba(148, 163, 184, 0.25)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} />
                   <YAxis
-                    tick={{ fontSize: 12, fill: "#5f6b6d" }}
+                    tick={{ fontSize: 12, fill: "#64748b" }}
                     tickLine={false}
-                    axisLine={{ stroke: "rgba(23, 33, 33, 0.24)" }}
+                    axisLine={false}
                     tickFormatter={(value) => (showPercentChange ? `${value}%` : value)}
                   />
-                  <Tooltip formatter={(value) => (showPercentChange ? `${value}%` : value)} />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 14,
+                      border: "1px solid #e2e8f0",
+                      boxShadow: "0 8px 24px rgba(15, 23, 42, 0.12)",
+                    }}
+                    formatter={(value) => (showPercentChange ? `${value}%` : value)}
+                  />
                   <Legend />
-                  <Line type="monotone" dataKey="stockA" name={result.stockA.symbol} stroke="#114b5f" strokeWidth={3} dot={false} connectNulls />
-                  <Line type="monotone" dataKey="stockB" name={result.stockB.symbol} stroke="#1a936f" strokeWidth={3} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="stockA" name={result.stockA.symbol} stroke="#2563eb" strokeWidth={3} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="stockB" name={result.stockB.symbol} stroke="#22c55e" strokeWidth={3} dot={false} connectNulls />
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          </section>
+          </ChartCard>
 
           <section className="compare-cards">
-            <StockCard title="Stock A" stock={result.stockA} color="#114b5f" showPercentChange={showPercentChange} />
-            <StockCard title="Stock B" stock={result.stockB} color="#1a936f" showPercentChange={showPercentChange} />
+            <StockCard title="Stock A" stock={result.stockA} color="#2563eb" showPercentChange={showPercentChange} />
+            <StockCard title="Stock B" stock={result.stockB} color="#22c55e" showPercentChange={showPercentChange} />
           </section>
 
-          <section className="panel">
-            <h2 style={{ marginTop: 0 }}>Performance Comparison</h2>
+          <Card>
+            <div className="card__header">
+              <div>
+                <h2 style={{ marginTop: 0 }}>Performance Comparison</h2>
+                <p className="card__description">Cleaner bar rows to compare the two positions across common windows.</p>
+              </div>
+            </div>
             <div className="compare-performance">
               <PerformanceRow label="1 Month Return" valueA={result.stockA.performance["1m"]} valueB={result.stockB.performance["1m"]} />
               <PerformanceRow label="3 Month Return" valueA={result.stockA.performance["3m"]} valueB={result.stockB.performance["3m"]} />
               <PerformanceRow label="6 Month Return" valueA={result.stockA.performance["6m"]} valueB={result.stockB.performance["6m"]} />
             </div>
-          </section>
+          </Card>
 
-          <section className="panel">
-            <h2 style={{ marginTop: 0 }}>Insights</h2>
+          <Card>
+            <div className="card__header">
+              <div>
+                <h2 style={{ marginTop: 0 }}>Insights</h2>
+                <p className="card__description">Short takeaways from the comparison output.</p>
+              </div>
+            </div>
             <div className="compare-insights">
               {result.insights.map((insight) => (
                 <div key={insight} className="compare-insight">
@@ -279,7 +305,7 @@ export function CompareStocksPage() {
                 </div>
               ))}
             </div>
-          </section>
+          </Card>
         </>
       )}
     </div>

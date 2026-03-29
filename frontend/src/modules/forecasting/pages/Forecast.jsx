@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { Card, MetricCard } from "../../../components/ui/Card";
 import { ForecastCard } from "../components/ForecastCard";
 import { ForecastChart } from "../components/ForecastChart";
 import { portfolioApi } from "../../portfolio/services/portfolioApi";
@@ -66,18 +67,23 @@ export function ForecastPage() {
 
   return (
     <>
-      <section className="panel">
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+      <Card className="forecast-page-hero">
+        <div className="stocks-page-hero__header">
           <div>
-            <p className="muted" style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.18em", fontSize: 12 }}>Forecast Studio</p>
+            <p className="eyebrow">Forecast Studio</p>
             <h1 style={{ marginBottom: 6 }}>Stock Forecasting</h1>
-            <p className="muted" style={{ margin: 0 }}>Run ARIMA or RNN-based forecasts for stocks from your portfolio or any searchable symbol.</p>
+            <p className="muted" style={{ margin: 0 }}>Run ARIMA or RNN-based forecasts for portfolio stocks or any searchable symbol.</p>
           </div>
         </div>
-        {pageError && <p style={{ color: "#c05353", marginTop: 14, marginBottom: 0 }}>{pageError}</p>}
-      </section>
+        <div className="metric-grid">
+          <MetricCard label="Portfolio Symbols" value={portfolioOptions.length} meta="Available in the portfolio selector" tone="primary" />
+          <MetricCard label="Supported Horizons" value="3" meta="3M, 6M, and 1Y currently supported by the API" tone="primary" />
+          <MetricCard label="Chart Focus" value={result?.symbol || "Ready"} meta={result ? `${result.model} • ${result.horizon}` : "Generate a forecast to visualize"} tone="success" />
+        </div>
+        {pageError ? <p className="form-error">{pageError}</p> : null}
+      </Card>
 
-      <section className="grid two" style={{ marginTop: 20 }}>
+      <section className="grid two">
         <ForecastCard
           title="Forecast from Portfolio"
           description="Choose a stock you already hold, select the model and horizon, then generate a forecast."

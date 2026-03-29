@@ -90,39 +90,39 @@ export function ForecastChart({ result }) {
   }
 
   return (
-    <section className="panel" style={{ marginTop: 20 }}>
+    <section className="panel forecast-chart-panel" style={{ marginTop: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap", marginBottom: 20 }}>
         <div>
-          <p className="muted" style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.18em", fontSize: 12 }}>Forecast Result</p>
+          <p className="eyebrow">Forecast Result</p>
           <h2 style={{ margin: "10px 0 6px" }}>{result.symbol}</h2>
           <p className="muted" style={{ margin: 0 }}>{result.model} model | {result.horizon} horizon</p>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <span style={{ padding: "8px 12px", borderRadius: 999, background: "rgba(17, 75, 95, 0.08)", color: "#114b5f", fontWeight: 700, fontSize: 13 }}>
+          <span className="badge badge--primary">
             Historical
           </span>
-          <span style={{ padding: "8px 12px", borderRadius: 999, background: "rgba(26, 147, 111, 0.10)", color: "#1a936f", fontWeight: 700, fontSize: 13 }}>
+          <span className="badge" style={{ color: "#15803d", background: "rgba(34, 197, 94, 0.12)", borderColor: "rgba(34, 197, 94, 0.22)" }}>
             Forecast
           </span>
         </div>
       </div>
 
-      <div style={{ height: 380 }}>
+      <div style={{ height: 420 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 16, right: 18, left: 12, bottom: 8 }}>
-            <CartesianGrid stroke="rgba(17, 75, 95, 0.08)" vertical={false} />
+            <CartesianGrid stroke="rgba(148, 163, 184, 0.25)" vertical={false} />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 12, fill: "#5f6b6d" }}
+              tick={{ fontSize: 12, fill: "#64748b" }}
               tickLine={false}
-              axisLine={{ stroke: "rgba(23, 33, 33, 0.24)", strokeWidth: 1 }}
+              axisLine={false}
               minTickGap={28}
               dy={8}
             />
             <YAxis
-              tick={{ fontSize: 12, fill: "#5f6b6d" }}
+              tick={{ fontSize: 12, fill: "#64748b" }}
               tickLine={false}
-              axisLine={{ stroke: "rgba(23, 33, 33, 0.24)", strokeWidth: 1 }}
+              axisLine={false}
               tickFormatter={(value) => `Rs ${formatCurrency(value)}`}
               width={96}
             />
@@ -130,12 +130,12 @@ export function ForecastChart({ result }) {
             {forecastStartDate && (
               <ReferenceLine
                 x={forecastStartDate}
-                stroke="rgba(17, 75, 95, 0.18)"
+                stroke="rgba(37, 99, 235, 0.22)"
                 strokeDasharray="3 5"
               />
             )}
-            <Line type="monotone" dataKey="historicalPrice" stroke="#114b5f" strokeWidth={3} dot={false} connectNulls={false} />
-            <Line type="monotone" dataKey="forecastPrice" stroke="#1a936f" strokeWidth={3} strokeDasharray="8 6" dot={false} connectNulls />
+            <Line type="monotone" dataKey="historicalPrice" stroke="#2563eb" strokeWidth={3} dot={false} connectNulls={false} />
+            <Line type="monotone" dataKey="forecastPrice" stroke="#22c55e" strokeWidth={3} strokeDasharray="8 6" dot={false} connectNulls />
           </LineChart>
         </ResponsiveContainer>
       </div>

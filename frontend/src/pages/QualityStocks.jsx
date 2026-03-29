@@ -1,8 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
+import { Card, MetricCard } from "../components/ui/Card";
 import { portfolioApi } from "../modules/portfolio/services/portfolioApi";
 import { qualityStocksApi } from "../modules/quality-stocks/services/qualityStocksApi";
+
+function signalTone(buySignal) {
+  if (buySignal === "BUY") return "Positive";
+  if (buySignal === "SELL") return "Negative";
+  return "Neutral";
+}
+
+function miniSeries(score) {
+  const base = Number(score) || 0;
+  return [Math.max(base - 2, 1), Math.max(base - 1, 1), Math.max(base, 1), Math.min(base + 1, 10)].map((value, index) => ({
+    id: index,
+    value: Math.max(12, value * 10),
+  }));
+}
 
 export function QualityStocksPage() {
   const navigate = useNavigate();
@@ -138,6 +153,11 @@ export function QualityStocksPage() {
     [portfolios, selectedPortfolioId],
   );
 
+  const topReports = useMemo(
+    () => [...savedReports].sort((left, right) => (Number(right.ai_rating) || 0) - (Number(left.ai_rating) || 0)).slice(0, 3),
+    [savedReports],
+  );
+
   async function refreshReports() {
     if (!selectedPortfolioId || !selectedPortfolio) {
       setSavedReports([]);
@@ -154,31 +174,27 @@ export function QualityStocksPage() {
 
   return (
     <>
-      <section className="panel">
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+      <Card className="quality-page-hero">
+        <div className="stocks-page-hero__header">
           <div>
-            <p className="muted" style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.18em", fontSize: 12 }}>Portfolio Quality</p>
+            <p className="eyebrow">Portfolio Quality</p>
             <h1 style={{ marginBottom: 6 }}>Quality Stock Analysis</h1>
             <p className="muted" style={{ margin: 0 }}>
               Saved AI-generated research reports for your selected portfolio.
             </p>
           </div>
-          <Link
-            to="/portfolio"
-            style={{
-              padding: "12px 16px",
-              borderRadius: 14,
-              border: "1px solid rgba(17, 75, 95, 0.12)",
-              background: "rgba(255, 255, 255, 0.72)",
-            }}
-          >
-            Back to Portfolio
-          </Link>
+          <Link to="/portfolio" className="ghost-btn">Back to Portfolio</Link>
         </div>
-      </section>
 
-      <section className="panel">
-        <label style={{ display: "grid", gap: 8, maxWidth: 340 }}>
+        <div className="metric-grid">
+          <MetricCard label="Portfolios" value={portfolios.length} meta="Available quality research contexts" tone="primary" />
+          <MetricCard label="Saved Reports" value={savedReports.length} meta={selectedPortfolio?.name || "Choose a portfolio"} tone="primary" />
+          <MetricCard label="Top Score" value={topReports[0] ? `${topReports[0].ai_rating}/10` : "--"} meta={topReports[0]?.stock_symbol || "No reports yet"} tone="success" />
+        </div>
+      </Card>
+
+      <Card>
+        <label className="stocks-page-hero__select" style={{ maxWidth: 340 }}>
           <span className="muted" style={{ fontSize: 13 }}>Portfolio</span>
           <select
             value={selectedPortfolioId}
@@ -212,23 +228,14 @@ export function QualityStocksPage() {
         ) : null}
 
         {selectedPortfolio?.source === "groupedSector" ? (
-          <div
-            style={{
-              marginTop: 16,
-              padding: "14px 16px",
-              borderRadius: 16,
-              background: "rgba(123, 110, 230, 0.08)",
-              border: "1px solid rgba(123, 110, 230, 0.16)",
-              display: "grid",
-              gap: 10,
-            }}
-          >
+          <div className="sector-card__progress">
             <p className="muted" style={{ margin: 0 }}>
               This portfolio comes from your sector-based holdings on the Portfolio page. Saved reports shown here are matched to that sector name.
             </p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button
                 type="button"
+                className="ghost-btn"
                 onClick={() => navigate(`/portfolio/sector/${encodeURIComponent(selectedPortfolio.name)}`)}
               >
                 Open Sector Portfolio
@@ -236,10 +243,49 @@ export function QualityStocksPage() {
             </div>
           </div>
         ) : null}
-      </section>
+      </Card>
 
-      <section className="panel">
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
+      <Card>
+        <div className="card__header">
+          <div>
+            <h2 style={{ margin: 0 }}>Top 3 Quality Stocks</h2>
+            <p className="muted" style={{ margin: "8px 0 0" }}>
+              Highest-rated saved reports for the selected portfolio.
+            </p>
+          </div>
+        </div>
+
+        {!loading && !!topReports.length ? (
+          <div className="quality-top-grid">
+            {topReports.map((item) => (
+              <Card key={`top-${item.id}`} as="article" className="quality-top-card" interactive>
+                <div className="sector-card__title-row">
+                  <div>
+                    <p style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{item.stock_name || item.stock_symbol}</p>
+                    <p className="muted" style={{ margin: "6px 0 0" }}>{item.stock_symbol}</p>
+                  </div>
+                  <span className="badge badge--primary">{item.ai_rating}/10</span>
+                </div>
+                <div className="sector-card__stats">
+                  <span className="badge">{signalTone(item.buy_signal)}</span>
+                  <span className="muted">{item.buy_signal}</span>
+                </div>
+                <div className="quality-mini-chart" aria-hidden="true">
+                  {miniSeries(item.ai_rating).map((bar) => (
+                    <span key={bar.id} className="quality-mini-chart__bar" style={{ height: `${bar.value}%` }} />
+                  ))}
+                </div>
+                <p className="muted" style={{ margin: 0 }}>{item.explanation || "No explanation available."}</p>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          !loading ? <p className="muted" style={{ margin: 0 }}>No saved reports yet.</p> : null
+        )}
+      </Card>
+
+      <Card>
+        <div className="card__header">
           <div>
             <h2 style={{ margin: 0 }}>Saved Reports</h2>
             <p className="muted" style={{ margin: "8px 0 0" }}>
@@ -251,42 +297,30 @@ export function QualityStocksPage() {
         </div>
 
         {loading ? <p style={{ margin: 0 }}>Loading saved reports...</p> : null}
-        {!loading && error ? <p style={{ margin: 0 }}>{error}</p> : null}
+        {!loading && error ? <p className="form-error">{error}</p> : null}
         {!loading && selectedPortfolioId && !savedReports.length ? <p style={{ margin: 0 }}>No saved reports yet.</p> : null}
 
         {!loading && !!savedReports.length ? (
-          <div style={{ display: "grid", gap: 12 }}>
+          <div className="quality-report-list">
             {savedReports.map((item) => (
-              <article
-                key={item.id}
-                style={{
-                  padding: "16px 18px",
-                  borderRadius: 16,
-                  border: "1px solid rgba(17, 75, 95, 0.08)",
-                  background: "rgba(255,255,255,0.78)",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 16,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
-              >
+              <article key={item.id} className="quality-report-card">
                 <div>
-                  <p style={{ margin: 0, fontWeight: 700, fontSize: 18 }}>{item.stock_name || item.stock_symbol}</p>
+                  <div className="sector-card__title-row">
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: 18 }}>{item.stock_name || item.stock_symbol}</p>
+                    <span className="badge badge--primary">{item.ai_rating}/10</span>
+                  </div>
                   <p className="muted" style={{ margin: "6px 0 0" }}>
-                    {item.stock_symbol} · AI Rating {item.ai_rating}/10 · {item.buy_signal}
-                  </p>
-                  <p className="muted" style={{ margin: "6px 0 0" }}>
-                    Predicted Price: {item.predicted_price ?? "N/A"}
+                    {item.stock_symbol} · {item.buy_signal} · Predicted Price: {item.predicted_price ?? "N/A"}
                   </p>
                   <p className="muted" style={{ margin: "6px 0 0" }}>
                     {item.explanation || "No explanation available."}
                   </p>
                 </div>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <button type="button" onClick={() => navigate(`/quality-stocks/${item.id}`)}>View Report</button>
+                  <button type="button" className="btn" onClick={() => navigate(`/quality-stocks/${item.id}`)}>View Report</button>
                   <button
                     type="button"
+                    className="ghost-btn"
                     onClick={async () => {
                       await qualityStocksApi.rerun(item.id);
                       await refreshReports();
@@ -296,6 +330,7 @@ export function QualityStocksPage() {
                   </button>
                   <button
                     type="button"
+                    className="ghost-btn"
                     onClick={async () => {
                       await qualityStocksApi.remove(item.id);
                       setAllReports((current) => current.filter((report) => report.id !== item.id));
@@ -308,7 +343,7 @@ export function QualityStocksPage() {
             ))}
           </div>
         ) : null}
-      </section>
+      </Card>
     </>
   );
 }

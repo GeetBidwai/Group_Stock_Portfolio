@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { Card, MetricCard } from "../../../components/ui/Card";
 import { DownloadReportButton } from "../components/DownloadReportButton";
 import { NewsList } from "../components/NewsList";
 import { SentimentSummaryCard } from "../components/SentimentSummaryCard";
@@ -54,18 +55,16 @@ export function SentimentPage() {
 
   return (
     <>
-      <section className="panel">
-        <p className="muted" style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.18em", fontSize: 12 }}>
-          Sentiment Studio
-        </p>
-        <h1 style={{ marginBottom: 6 }}>News-based Sentiment Analysis</h1>
-        <p className="muted" style={{ margin: 0 }}>
-          Search a stock, analyze recent news coverage, and generate a report without leaving the platform.
-        </p>
-      </section>
+      <Card className="sentiment-page-hero">
+        <div>
+          <p className="eyebrow">Sentiment Studio</p>
+          <h1 style={{ marginBottom: 6 }}>News-based Sentiment Analysis</h1>
+          <p className="muted" style={{ margin: 0 }}>
+            Search a stock, analyze recent news coverage, and generate a report without leaving the platform.
+          </p>
+        </div>
 
-      <section className="panel" style={{ marginTop: 18 }}>
-        <form className="form" onSubmit={handleAnalyze}>
+        <form className="form sentiment-search-card" onSubmit={handleAnalyze}>
           <StockSearch
             value={query}
             onChange={(nextValue) => {
@@ -84,27 +83,33 @@ export function SentimentPage() {
           </button>
         </form>
 
+        <div className="metric-grid">
+          <MetricCard label="Selected Stock" value={selectedStock?.symbol || "--"} meta={selectedStock?.name || "Choose a stock to analyze"} tone="primary" />
+          <MetricCard label="Articles" value={(result?.articles || []).length} meta="Live news items used in the model output" tone="primary" />
+          <MetricCard label="Overall Sentiment" value={result?.overall_sentiment || "Ready"} meta={result?.message || "Awaiting analysis"} tone="success" />
+        </div>
+
         {selectedStock?.name && (
-          <p className="muted" style={{ marginTop: 14, marginBottom: 0 }}>
+          <p className="muted" style={{ marginTop: 0, marginBottom: 0 }}>
             Selected: <strong style={{ color: "var(--text)" }}>{selectedStock.symbol}</strong> - {selectedStock.name}
           </p>
         )}
-        {error && <p style={{ color: "#c05353", marginTop: 14, marginBottom: 0 }}>{error}</p>}
-        {!error && result?.message && (
-          <p style={{ color: result?.articles?.length ? "#8b6a1d" : "#5f6b6d", marginTop: 14, marginBottom: 0 }}>
+        {error ? <p className="form-error">{error}</p> : null}
+        {!error && result?.message ? (
+          <p className="muted" style={{ margin: 0 }}>
             {result.message}
           </p>
-        )}
-      </section>
+        ) : null}
+      </Card>
 
       {result && (
         <>
-          <div className="page-section" style={{ marginTop: 18 }}>
+          <div className="page-section">
             <SentimentSummaryCard result={result} />
           </div>
 
-          <section className="panel" style={{ marginTop: 18, paddingTop: 20, paddingBottom: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+          <Card>
+            <div className="card__header">
               <div>
                 <h2 style={{ marginBottom: 6 }}>Recent News Coverage</h2>
                 <p className="muted" style={{ margin: 0 }}>
@@ -113,18 +118,16 @@ export function SentimentPage() {
               </div>
               <DownloadReportButton disabled={!result?.stock || !(result?.articles || []).length} loading={downloading} onClick={handleDownloadReport} />
             </div>
-          </section>
+          </Card>
 
           {(result.articles || []).length ? (
-            <div style={{ marginTop: 14 }}>
-              <NewsList articles={result.articles || []} />
-            </div>
+            <NewsList articles={result.articles || []} />
           ) : (
-            <section className="panel" style={{ marginTop: 14 }}>
+            <Card>
               <p className="muted" style={{ margin: 0 }}>
                 No live news articles are available right now. The sentiment card is being kept neutral until a news source responds.
               </p>
-            </section>
+            </Card>
           )}
         </>
       )}

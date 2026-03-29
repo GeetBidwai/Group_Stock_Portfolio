@@ -102,7 +102,7 @@ export function PersonalAssistant() {
               onClick={() => setIsOpen(false)}
               aria-label="Close personal assistant"
             >
-              x
+              ×
             </button>
           </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { Card, MetricCard } from "../../components/ui/Card";
 import { StockList } from "./StockList";
 import { stocksService } from "./stocksService";
 
@@ -68,12 +69,10 @@ export function SectorStocksPage() {
 
   return (
     <>
-      <section className="panel">
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+      <Card className="stocks-page-hero">
+        <div className="stocks-page-hero__header">
           <div>
-            <p className="muted" style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.18em", fontSize: 12 }}>
-              Sector Stocks
-            </p>
+            <p className="eyebrow">Sector Stocks</p>
             <h1 style={{ marginBottom: 6 }}>{stocksPayload.sector?.name || "Sector Details"}</h1>
             <p className="muted" style={{ margin: 0 }}>
               Browse all stocks listed under this sector and add them to your portfolio when needed.
@@ -83,9 +82,25 @@ export function SectorStocksPage() {
             ← Back to Sectors
           </button>
         </div>
-        {error ? <p style={{ color: "#c05353", marginBottom: 0 }}>{error}</p> : null}
-        {success ? <p style={{ color: "var(--accent-soft)", marginBottom: 0 }}>{success}</p> : null}
-      </section>
+
+        <div className="metric-grid">
+          <MetricCard
+            label="Stocks"
+            value={stocksPayload.items.length}
+            meta="Live-priced names in this sector"
+            tone="primary"
+          />
+          <MetricCard
+            label="Market"
+            value={stocksPayload.sector?.market_code || "--"}
+            meta={stocksPayload.sector?.name || "Selected sector"}
+            tone="primary"
+          />
+        </div>
+
+        {error ? <p className="form-error">{error}</p> : null}
+        {success ? <p className="is-positive-text" style={{ margin: 0 }}>{success}</p> : null}
+      </Card>
 
       <StockList
         loading={loadingStocks}

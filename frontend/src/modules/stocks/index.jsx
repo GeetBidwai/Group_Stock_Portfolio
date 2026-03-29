@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { qualityStocksApi } from "../quality-stocks/services/qualityStocksApi";
+import { Card } from "../../components/ui/Card";
 import { SectorList } from "./SectorList";
 import { stocksService } from "./stocksService";
 
@@ -30,7 +31,6 @@ export function StocksPage() {
         const defaultMarket = nextMarkets[0]?.code || "";
         setSelectedMarket(defaultMarket);
         setError("");
-        setSuccess("");
       } catch (err) {
         if (!cancelled) {
           setError(err.message);
@@ -128,18 +128,16 @@ export function StocksPage() {
 
   return (
     <>
-      <section className="panel">
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+      <Card className="stocks-page-hero">
+        <div className="stocks-page-hero__header">
           <div>
-            <p className="muted" style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.18em", fontSize: 12 }}>
-              Stocks Browser
-            </p>
+            <p className="eyebrow">Stocks Browser</p>
             <h1 style={{ marginBottom: 6 }}>Explore Stocks</h1>
             <p className="muted" style={{ margin: 0 }}>
               Browse live-priced stocks by market and sector using the curated dataset mapped on the backend.
             </p>
           </div>
-          <label style={{ display: "grid", gap: 8, minWidth: 220 }}>
+          <label className="stocks-page-hero__select">
             <span className="muted" style={{ fontSize: 13 }}>Market</span>
             <select value={selectedMarket} onChange={(event) => setSelectedMarket(event.target.value)} disabled={loadingMarkets}>
               {markets.map((market) => (
@@ -150,8 +148,25 @@ export function StocksPage() {
             </select>
           </label>
         </div>
-        {error ? <p style={{ color: "#c05353", marginBottom: 0 }}>{error}</p> : null}
-      </section>
+        <div className="metric-grid">
+          <article className="metric-tile metric-tile--primary">
+            <p className="metric-tile__label">Selected Market</p>
+            <p className="metric-tile__value">{selectedMarket || "--"}</p>
+            <p className="metric-tile__meta">{selectedMarketLabel}</p>
+          </article>
+          <article className="metric-tile metric-tile--primary">
+            <p className="metric-tile__label">Available Sectors</p>
+            <p className="metric-tile__value">{sectorCards.length}</p>
+            <p className="metric-tile__meta">Curated sector universe</p>
+          </article>
+          <article className="metric-tile metric-tile--success">
+            <p className="metric-tile__label">Quality Coverage</p>
+            <p className="metric-tile__value">{sectorCards.reduce((sum, sector) => sum + (sector.qualityCount || 0), 0)}</p>
+            <p className="metric-tile__meta">Linked research reports</p>
+          </article>
+        </div>
+        {error ? <p className="form-error">{error}</p> : null}
+      </Card>
 
       <section>
         <SectorList

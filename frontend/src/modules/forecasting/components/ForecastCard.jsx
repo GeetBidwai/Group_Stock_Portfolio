@@ -111,9 +111,9 @@ export function ForecastCard({
   }
 
   return (
-    <section className={`panel${isPortfolioDropdownOpen ? " forecast-card--elevated" : ""}`}>
+    <section className={`panel forecast-form-card${isPortfolioDropdownOpen ? " forecast-card--elevated" : ""}`}>
       <div style={{ marginBottom: 18 }}>
-        <p className="muted" style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.18em", fontSize: 12 }}>Forecast Module</p>
+        <p className="eyebrow">Forecast Module</p>
         <h2 style={{ margin: "10px 0 6px" }}>{title}</h2>
         <p className="muted" style={{ margin: 0 }}>{description}</p>
       </div>

@@ -1,7 +1,9 @@
+import { Card } from "../../../components/ui/Card";
+
 const LABEL_STYLES = {
-  Positive: { color: "#1a936f", background: "rgba(26, 147, 111, 0.12)" },
-  Negative: { color: "#c05353", background: "rgba(192, 83, 83, 0.12)" },
-  Neutral: { color: "#7b8485", background: "rgba(123, 132, 133, 0.12)" },
+  Positive: { color: "#15803d", background: "rgba(34, 197, 94, 0.12)" },
+  Negative: { color: "#b91c1c", background: "rgba(239, 68, 68, 0.12)" },
+  Neutral: { color: "#475569", background: "rgba(100, 116, 139, 0.12)" },
 };
 
 export function NewsCard({ article }) {
@@ -10,7 +12,7 @@ export function NewsCard({ article }) {
   const publishedAt = article.published_at ? new Date(article.published_at).toLocaleString() : "Unknown publish time";
 
   return (
-    <article className="panel" style={{ padding: 18 }}>
+    <Card as="article" className="sentiment-news-card" interactive>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start", flexWrap: "wrap" }}>
         <h3
           style={{
@@ -27,18 +29,18 @@ export function NewsCard({ article }) {
         >
           {article.title}
         </h3>
-        <span style={{ padding: "6px 12px", borderRadius: 999, fontSize: 13, fontWeight: 700, ...badgeStyle }}>
+        <span className="badge" style={{ ...badgeStyle, borderColor: "transparent" }}>
           {sentimentLabel}
         </span>
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center", marginTop: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
         <div className="muted" style={{ fontSize: 14 }}>{publishedAt}</div>
-        {article.url && (
-          <a href={article.url} target="_blank" rel="noreferrer" style={{ color: "var(--accent)", fontWeight: 700 }}>
+        {article.url ? (
+          <a href={article.url} target="_blank" rel="noreferrer" style={{ color: "var(--primary)", fontWeight: 700 }}>
             Read article
           </a>
-        )}
+        ) : null}
       </div>
-    </article>
+    </Card>
   );
 }
