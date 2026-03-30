@@ -16,6 +16,7 @@ Group Stock Project is a full-stack stock analytics platform with a Django REST 
 - reportlab (PDF sentiment report)
 - textblob + vaderSentiment (sentiment fallback)
 - transformers + torch (FinBERT sentiment path)
+- Assistant stack: custom service flow + optional RAG (Gemini embeddings + ChromaDB/memory fallback + Ollama, with optional Grok API for general replies)
 
 ### Frontend
 
@@ -59,6 +60,16 @@ Group_Stock_Project/
 - `commodities_module`: gold/silver and correlation analytics
 - `crypto_module`: BTC hourly and range forecast analytics
 - `assistant_module`: personal assistant chat + optional RAG reindex
+
+## Assistant Architecture (Current)
+
+- The chatbot does **not** use LangGraph.
+- It uses a custom orchestration flow in `assistant_module`:
+  - Intent + deterministic reply path
+  - Knowledge-base matcher
+  - Optional RAG pipeline (`ASSISTANT_RAG_ENABLED=true`)
+  - General LLM fallback (Grok if configured, else Ollama)
+- Vector storage uses ChromaDB when installed, and an in-memory/JSON fallback when unavailable.
 
 ## Routing Note
 
@@ -165,6 +176,11 @@ OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3
 OLLAMA_TIMEOUT_SECONDS=18
 OLLAMA_MAX_RETRIES=2
+GROK_API_KEY=
+GROK_MODEL=grok-2-latest
+GROK_BASE_URL=https://api.x.ai/v1
+GROK_TIMEOUT_SECONDS=20
+GROK_MAX_RETRIES=1
 CHROMA_PERSIST_DIR=
 ```
 
