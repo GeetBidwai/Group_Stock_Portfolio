@@ -60,27 +60,52 @@ export function PortfolioPage() {
   const [error, setError] = useState("");
 
   async function load() {
-    try {
-      const [groupedData, insightsData, qualityData] = await Promise.all([
-        portfolioApi.groupedSectorPortfolio(),
-        portfolioApi.portfolioInsights(),
-        qualityStocksApi.list(),
-      ]);
-      setGroupedPortfolio(Array.isArray(groupedData) ? groupedData : []);
-      setQualityReports(Array.isArray(qualityData) ? qualityData : []);
-      setInsights(
-        insightsData || {
+    let firstError = "";
+    const rememberError = (message) => {
+      if (!firstError && message) {
+        firstError = message;
+      }
+    };
+
+    const groupedPromise = portfolioApi.groupedSectorPortfolio()
+      .then((data) => {
+        setGroupedPortfolio(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        setGroupedPortfolio([]);
+        rememberError(err?.message);
+      });
+
+    const insightsPromise = portfolioApi.portfolioInsights()
+      .then((data) => {
+        setInsights(
+          data || {
+            risk_breakdown: { low: 0, medium: 0, high: 0 },
+            top_gainers: [],
+            top_losers: [],
+          },
+        );
+      })
+      .catch((err) => {
+        setInsights({
           risk_breakdown: { low: 0, medium: 0, high: 0 },
           top_gainers: [],
           top_losers: [],
-        },
-      );
-      setError("");
-    } catch (err) {
-      setError(err.message);
-      setGroupedPortfolio([]);
-      setQualityReports([]);
-    }
+        });
+        rememberError(err?.message);
+      });
+
+    const qualityPromise = qualityStocksApi.list()
+      .then((data) => {
+        setQualityReports(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        setQualityReports([]);
+        rememberError(err?.message);
+      });
+
+    await Promise.allSettled([groupedPromise, insightsPromise, qualityPromise]);
+    setError(firstError);
   }
 
   useEffect(() => {

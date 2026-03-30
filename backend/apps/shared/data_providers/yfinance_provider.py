@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import json
 from time import time
+from typing import ClassVar
 
 import pandas as pd
 import requests
@@ -18,6 +19,8 @@ class YFinanceMarketDataProvider(MarketDataProvider):
     symbol_aliases: dict = None
     snapshot_ttl_seconds: int = 900
     history_ttl_seconds: dict = None
+    live_fetch_backoff_seconds: int = 120
+    _live_fetch_paused_until: ClassVar[float] = 0.0
 
     def __post_init__(self):
         if self.symbol_aliases is None:
@@ -90,14 +93,24 @@ class YFinanceMarketDataProvider(MarketDataProvider):
         try:
             return ticker.history(period=period, interval=interval)
         except YFRateLimitError:
+            self._pause_live_fetch()
             raise
-        except Exception:
+        except Exception as exc:
+            if self._looks_like_network_error(exc):
+                self._pause_live_fetch()
             return pd.DataFrame()
 
     def get_ticker_snapshot(self, symbol: str) -> dict:
         cached_payload = self._load_cached_snapshot(symbol, max_age_seconds=self.snapshot_ttl_seconds)
         if cached_payload is not None:
             return cached_payload
+
+        if self._is_live_fetch_paused():
+            fallback_payload = self._load_cached_snapshot(symbol)
+            if fallback_payload is not None:
+                return fallback_payload
+            fallback_history = self._load_cached_history(symbol, period="1y", interval="1d")
+            return self._snapshot_from_cached_history(symbol, fallback_history)
 
         selected_symbol = self._normalize_symbol(symbol)
         info = {}
@@ -110,8 +123,11 @@ class YFinanceMarketDataProvider(MarketDataProvider):
                 try:
                     candidate_info = ticker.info or {}
                 except YFRateLimitError:
+                    self._pause_live_fetch()
                     raise
-                except Exception:
+                except Exception as exc:
+                    if self._looks_like_network_error(exc):
+                        self._pause_live_fetch()
                     candidate_info = {}
                 candidate_history = self._safe_history(ticker, period="1y", interval="1d")
                 if candidate_info or not candidate_history.empty:
@@ -120,6 +136,7 @@ class YFinanceMarketDataProvider(MarketDataProvider):
                     history = candidate_history
                     break
         except YFRateLimitError:
+            self._pause_live_fetch()
             cached_payload = self._load_cached_snapshot(symbol)
             if cached_payload is not None:
                 return cached_payload
@@ -182,11 +199,21 @@ class YFinanceMarketDataProvider(MarketDataProvider):
         if cached_history:
             return cached_history
 
+        if self._is_live_fetch_paused():
+            fallback_history = self._load_cached_history(symbol, period, interval)
+            if fallback_history:
+                return fallback_history
+            cached_snapshot = self._load_cached_snapshot(symbol)
+            if cached_snapshot is not None:
+                return cached_snapshot.get("history", [])
+            return []
+
         for candidate in self._candidate_symbols(symbol):
             ticker = yf.Ticker(candidate)
             try:
                 history = self._safe_history(ticker, period=period, interval=interval)
             except YFRateLimitError:
+                self._pause_live_fetch()
                 cached_history = self._load_cached_history(symbol, period, interval)
                 if cached_history:
                     return cached_history
@@ -300,7 +327,58 @@ class YFinanceMarketDataProvider(MarketDataProvider):
     def _history_ttl(self, interval: str) -> int:
         return self.history_ttl_seconds.get(interval, 21600)
 
+    @classmethod
+    def _is_live_fetch_paused(cls) -> bool:
+        return time() < cls._live_fetch_paused_until
+
+    def _pause_live_fetch(self):
+        self.__class__._live_fetch_paused_until = max(
+            self.__class__._live_fetch_paused_until,
+            time() + max(0, int(self.live_fetch_backoff_seconds)),
+        )
+
+    @staticmethod
+    def _looks_like_network_error(exc: Exception) -> bool:
+        if isinstance(exc, requests.RequestException):
+            return True
+        message = str(exc).lower()
+        return any(
+            marker in message
+            for marker in (
+                "failed to establish a new connection",
+                "max retries exceeded",
+                "temporarily unavailable",
+                "connection refused",
+                "name or service not known",
+                "timed out",
+                "winerror 10013",
+            )
+        )
+
+    def _snapshot_from_cached_history(self, symbol: str, history: list[dict]) -> dict:
+        last_close = None
+        if history:
+            try:
+                last_close = history[-1].get("close")
+            except Exception:
+                last_close = None
+        return {
+            "symbol": self._normalize_symbol(symbol),
+            "name": symbol.upper(),
+            "sector": None,
+            "current_price": last_close,
+            "trailing_pe": None,
+            "eps": None,
+            "market_cap": None,
+            "fifty_two_week_low": None,
+            "fifty_two_week_high": None,
+            "currency": None,
+            "history": history or [],
+        }
+
     def _fetch_chart_payload(self, symbol: str, period: str, interval: str) -> dict | None:
+        if self._is_live_fetch_paused():
+            return None
         headers = {"User-Agent": "Mozilla/5.0"}
         for candidate in self._candidate_symbols(symbol):
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{candidate}"
@@ -312,6 +390,9 @@ class YFinanceMarketDataProvider(MarketDataProvider):
                     timeout=15,
                 )
                 if response.status_code != 200:
+                    if response.status_code in {401, 403, 429, 500, 502, 503, 504}:
+                        self._pause_live_fetch()
+                        break
                     continue
                 data = response.json()
                 result = ((data.get("chart") or {}).get("result") or [None])[0]
@@ -325,6 +406,9 @@ class YFinanceMarketDataProvider(MarketDataProvider):
                     "meta": result.get("meta") or {},
                     "history": records,
                 }
+            except requests.RequestException:
+                self._pause_live_fetch()
+                break
             except Exception:
                 continue
         return None

@@ -82,6 +82,9 @@ class StocksPricingService:
 
 class StocksPortfolioService:
     INSIGHTS_CACHE_TIMEOUT_SECONDS = 300
+    RISK_CLASSIFICATION_CACHE_TIMEOUT_SECONDS = 3600
+    MAX_WORKERS = 4
+    PARALLEL_MIN_ITEMS = 5
 
     def _holdings_signature(self, user) -> str:
         manual_queryset = PortfolioStock.objects.filter(user=user)
@@ -110,9 +113,79 @@ class StocksPortfolioService:
     def _portfolio_risk_cache_key(self, user) -> str:
         return f"stocks-module:portfolio-risk:v1:{user.id}:{self._holdings_signature(user)}"
 
+    def _risk_classification_cache_key(self, market_symbol: str) -> str:
+        return f"stocks-module:risk-classify:v1:{(market_symbol or '').upper().strip()}"
+
     def _clear_user_caches(self, user_id: int):
         # Signature-based cache keys refresh automatically when holdings change.
         return None
+
+    def _classify_risk_with_cache(self, risk_service: RiskCategorizationService, market_symbol: str) -> str | None:
+        normalized_symbol = (market_symbol or "").upper().strip()
+        if not normalized_symbol:
+            return None
+
+        cache_key = self._risk_classification_cache_key(normalized_symbol)
+        cached = cache.get(cache_key)
+        if cached in {"low", "medium", "high"}:
+            return cached
+
+        try:
+            risk_payload = risk_service.classify(normalized_symbol)
+            live_risk = (risk_payload.get("risk_category") or "").strip().lower()
+            risk = live_risk if live_risk in {"low", "medium", "high"} else None
+        except Exception:
+            risk = None
+
+        if risk:
+            cache.set(cache_key, risk, self.RISK_CLASSIFICATION_CACHE_TIMEOUT_SECONDS)
+        return risk
+
+    def _prefetch_live_risk_map(self, live_candidates: list[dict]) -> dict[str, str | None]:
+        if not live_candidates:
+            return {}
+
+        risk_service = RiskCategorizationService()
+
+        def classify_candidate(candidate: dict) -> tuple[str, str | None]:
+            symbol = str(candidate.get("symbol") or "").upper().strip()
+            market_symbol = str(candidate.get("market_symbol") or "").strip()
+            return symbol, self._classify_risk_with_cache(risk_service, market_symbol)
+
+        if len(live_candidates) < self.PARALLEL_MIN_ITEMS:
+            return dict(classify_candidate(candidate) for candidate in live_candidates)
+
+        worker_count = min(self.MAX_WORKERS, len(live_candidates))
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            return dict(executor.map(classify_candidate, live_candidates))
+
+    def _snapshot_for_market_symbol(self, market_symbol: str) -> dict:
+        try:
+            return MarketDataService().get_ticker_snapshot(market_symbol)
+        except Exception:
+            return {}
+
+    def _prefetch_snapshot_map(self, entries: list[PortfolioEntry]) -> dict[str, dict]:
+        unique_symbols: dict[str, str] = {}
+        for entry in entries:
+            symbol = entry.stock.symbol.upper().strip()
+            if symbol not in unique_symbols:
+                unique_symbols[symbol] = self._market_symbol(entry.stock)
+
+        symbol_items = list(unique_symbols.items())
+        if not symbol_items:
+            return {}
+
+        def load_snapshot(item: tuple[str, str]) -> tuple[str, dict]:
+            symbol, market_symbol = item
+            return symbol, self._snapshot_for_market_symbol(market_symbol)
+
+        if len(symbol_items) < self.PARALLEL_MIN_ITEMS:
+            return dict(load_snapshot(item) for item in symbol_items)
+
+        worker_count = min(self.MAX_WORKERS, len(symbol_items))
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            return dict(executor.map(load_snapshot, symbol_items))
 
     @transaction.atomic
     def add_to_portfolio(self, user, stock_id: int) -> dict:
@@ -179,28 +252,34 @@ class StocksPortfolioService:
             row.symbol.upper(): row
             for row in StockReference.objects.filter(symbol__in=symbols, is_active=True).only("symbol", "name", "risk_category", "exchange")
         }
-        risk_service = RiskCategorizationService()
+        live_candidates = []
+
+        for holding in holdings:
+            symbol = holding["symbol"]
+            reference = reference_map.get(symbol)
+            stored_risk = (getattr(reference, "risk_category", "") or "").strip().lower()
+            market_symbol = holding["market_symbol"] or self._market_symbol_from_reference(symbol, reference)
+            if stored_risk not in {"low", "medium", "high"} and market_symbol:
+                live_candidates.append({"symbol": symbol, "market_symbol": market_symbol})
+
+        live_risk_map = self._prefetch_live_risk_map(live_candidates)
         items = []
 
         for holding in holdings:
-            reference = reference_map.get(holding["symbol"])
+            symbol = holding["symbol"]
+            reference = reference_map.get(symbol)
             stored_risk = (getattr(reference, "risk_category", "") or "").strip().lower()
             risk = stored_risk if stored_risk in {"low", "medium", "high"} else None
 
-            market_symbol = holding["market_symbol"] or self._market_symbol_from_reference(holding["symbol"], reference)
-            if risk is None and market_symbol:
-                try:
-                    risk_payload = risk_service.classify(market_symbol)
-                    live_risk = (risk_payload.get("risk_category") or "").strip().lower()
-                    risk = live_risk if live_risk in {"low", "medium", "high"} else None
-                except Exception:
-                    risk = None
+            market_symbol = holding["market_symbol"] or self._market_symbol_from_reference(symbol, reference)
+            if risk is None:
+                risk = live_risk_map.get(symbol)
 
             items.append(
                 {
-                    "symbol": holding["symbol"],
-                    "stock_name": holding["stock_name"] or getattr(reference, "name", None) or holding["symbol"],
-                    "market_symbol": market_symbol or holding["symbol"],
+                    "symbol": symbol,
+                    "stock_name": holding["stock_name"] or getattr(reference, "name", None) or symbol,
+                    "market_symbol": market_symbol or symbol,
                     "risk": risk.title() if risk else "Unknown",
                 }
             )
@@ -309,13 +388,13 @@ class StocksPortfolioService:
             cache.set(cache_key, payload, self.INSIGHTS_CACHE_TIMEOUT_SECONDS)
             return payload
 
-        market_data = MarketDataService()
         risk_breakdown = {"low": 0, "medium": 0, "high": 0}
         movers = []
         risk_items = {
             item["symbol"]: item
             for item in self.portfolio_risk_items(user)
         }
+        snapshots_by_symbol = self._prefetch_snapshot_map(entries)
 
         for item in risk_items.values():
             normalized_risk = (item.get("risk") or "").strip().lower()
@@ -324,15 +403,11 @@ class StocksPortfolioService:
 
         for entry in entries:
             symbol = entry.stock.symbol
-            market_symbol = self._market_symbol(entry.stock)
             risk_category = (risk_items.get(symbol, {}).get("risk") or "").strip().lower()
             if risk_category not in {"low", "medium", "high"}:
                 risk_category = "unknown"
 
-            try:
-                snapshot = market_data.get_ticker_snapshot(market_symbol)
-            except Exception:
-                snapshot = {}
+            snapshot = snapshots_by_symbol.get(symbol.upper().strip(), {})
 
             history = snapshot.get("history") or []
             current_price = snapshot.get("current_price")

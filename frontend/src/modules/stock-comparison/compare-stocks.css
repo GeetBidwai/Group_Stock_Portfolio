@@ -3,6 +3,13 @@
   gap: 20px;
 }
 
+/* Keep dropdown menus visible only on Compare page's top card. */
+.compare-dashboard > .panel:first-child {
+  position: relative;
+  z-index: 20;
+  overflow: visible;
+}
+
 .compare-toolbar {
   display: grid;
   gap: 16px;
@@ -90,7 +97,7 @@
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  z-index: 50;
+  z-index: 80;
   padding: 10px;
   border-radius: 18px;
   border: 1px solid var(--border);
