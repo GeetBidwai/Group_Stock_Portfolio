@@ -1519,6 +1519,144 @@ mark {
   gap: 14px;
 }
 
+.quality-report-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.quality-report-hero__eyebrow {
+  margin-bottom: 10px;
+}
+
+.quality-report-hero__title {
+  margin-bottom: 8px;
+}
+
+.quality-report-hero__meta {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.quality-report-layout {
+  display: grid;
+  gap: 20px;
+}
+
+.quality-report-summary-grid,
+.quality-report-copy-grid,
+.quality-report-chart-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.quality-report-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.quality-report-copy-grid,
+.quality-report-chart-grid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.quality-report-stat,
+.quality-report-copy-card,
+.quality-report-chart-card {
+  padding: 22px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.quality-report-stat {
+  min-height: 138px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.quality-report-stat__label {
+  margin: 0;
+}
+
+.quality-report-stat__value {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 3rem);
+  line-height: 1;
+}
+
+.quality-report-stat__signal {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+}
+
+.quality-report-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.quality-report-section-title {
+  margin: 0 0 14px;
+  font-size: 1.05rem;
+}
+
+.quality-report-body {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.quality-report-list-block {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.quality-report-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+
+.quality-report-metric {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-soft);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.quality-report-metric__label {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.quality-report-metric__value {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.quality-report-chart-shell {
+  height: 280px;
+}
+
 .quality-report-card {
   padding: 18px;
   border-radius: 16px;
@@ -1580,6 +1718,12 @@ mark {
 
   .personal-assistant__panel {
     width: min(100vw - 24px, 360px);
+  }
+
+  .quality-report-stat,
+  .quality-report-copy-card,
+  .quality-report-chart-card {
+    padding: 18px;
   }
 }
 

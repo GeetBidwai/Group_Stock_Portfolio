@@ -14,10 +14,10 @@ class RiskService:
         returns = returns[np.isfinite(returns)]
         if returns.size == 0:
             return None
-        return float(np.std(returns))
+        return float(np.std(returns) * np.sqrt(252))
 
     def categorize_risk(self, volatility: float | None, thresholds: dict | None = None) -> str:
-        configured_thresholds = thresholds or getattr(settings, "RISK_THRESHOLDS", {"low": 0.01, "medium": 0.02})
+        configured_thresholds = thresholds or getattr(settings, "RISK_THRESHOLDS", {"low": 0.2, "medium": 0.35})
         if volatility is None:
             return "Unknown"
         if volatility < configured_thresholds["low"]:

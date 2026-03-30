@@ -4,7 +4,9 @@ import difflib
 import logging
 import re
 
+from apps.assistant_module.general_llm_service import GeneralLLMService
 from apps.assistant_module.intent_detection import IntentDetectionService
+from apps.assistant_module.knowledge_service import AssistantKnowledgeService
 from apps.comparison_module.services import StockComparisonService
 from apps.forecasting_module.services import StockForecastingService
 from apps.portfolio_module.models import PortfolioStock
@@ -48,6 +50,7 @@ class PersonalAssistantService:
         sanitized_history = self._sanitize_history(history or [])
         holdings = self._portfolio_holdings(user)
         detection = IntentDetectionService().detect(cleaned_message)
+        knowledge_context = self._knowledge_context(user, holdings)
 
         direct_reply = self._direct_reply(user, cleaned_message, holdings)
         if direct_reply:
@@ -58,17 +61,69 @@ class PersonalAssistantService:
                 "entities": detection["entities"],
             }
 
+        knowledge_reply = AssistantKnowledgeService().answer(cleaned_message, knowledge_context)
+        if knowledge_reply:
+            return {
+                "reply": knowledge_reply,
+                "mode": "knowledge_base",
+                "intent": detection["intent"],
+                "entities": detection["entities"],
+            }
+
         rag_reply = self._rag_reply(cleaned_message, sanitized_history)
         if rag_reply:
             rag_reply.setdefault("intent", detection["intent"])
             rag_reply.setdefault("entities", detection["entities"])
             return rag_reply
 
+        llm_reply = GeneralLLMService().answer(
+            message=cleaned_message,
+            history=sanitized_history,
+            user_context=knowledge_context,
+        )
+        if llm_reply:
+            return {
+                "reply": llm_reply,
+                "mode": "general_llm",
+                "intent": detection["intent"],
+                "entities": detection["entities"],
+            }
+
         return {
             "reply": self._default_reply(holdings),
             "mode": "fallback",
             "intent": detection["intent"],
             "entities": detection["entities"],
+        }
+
+    def _knowledge_context(self, user, holdings: list[dict]) -> dict:
+        insights = StocksPortfolioService().portfolio_insights(user)
+        sector_counts: dict[str, int] = {}
+        for item in holdings:
+            sector = item["sector"] or "Unassigned"
+            sector_counts[sector] = sector_counts.get(sector, 0) + 1
+
+        top_sector = None
+        if sector_counts:
+            top_sector = sorted(sector_counts.items(), key=lambda pair: (-pair[1], pair[0]))[0][0]
+
+        risk_breakdown = insights.get("risk_breakdown") or {}
+        top_gainer = (insights.get("top_gainers") or [None])[0] or {}
+        top_loser = (insights.get("top_losers") or [None])[0] or {}
+
+        return {
+            "username": getattr(user, "username", "") or "there",
+            "portfolio_count": len(holdings),
+            "portfolio_symbols": ", ".join(item["symbol"] for item in holdings) if holdings else "no stocks yet",
+            "top_sector": top_sector or "Unassigned",
+            "risk_low_count": risk_breakdown.get("low", 0),
+            "risk_medium_count": risk_breakdown.get("medium", 0),
+            "risk_high_count": risk_breakdown.get("high", 0),
+            "top_gainer_symbol": top_gainer.get("symbol") or "N/A",
+            "top_gainer_change_pct": top_gainer.get("change_pct") if top_gainer.get("change_pct") is not None else "0",
+            "top_loser_symbol": top_loser.get("symbol") or "N/A",
+            "top_loser_change_pct": top_loser.get("change_pct") if top_loser.get("change_pct") is not None else "0",
+            "enabled_modules": self._enabled_modules(),
         }
 
     def _sanitize_history(self, history: list[dict]) -> list[dict]:
@@ -145,6 +200,9 @@ class PersonalAssistantService:
 
         if "what can you do" in normalized_text or normalized_text in {"help", "help me"}:
             return self._default_reply(holdings)
+
+        if self._is_portfolio_summary_question(normalized_text):
+            return self._portfolio_summary_reply(user, holdings)
 
         if self._is_portfolio_list_question(normalized_text):
             return self._portfolio_list_reply(holdings)
@@ -239,6 +297,40 @@ class PersonalAssistantService:
 
         return "stocks do i have" in text
 
+    def _is_portfolio_summary_question(self, text: str) -> bool:
+        if "summary" not in text and "summarize" not in text:
+            return False
+
+        portfolio_terms = {
+            "portfolio",
+            "holding",
+            "holdings",
+            "stock",
+            "stocks",
+            "my",
+            "give me",
+            "show me",
+            "quick",
+        }
+
+        explicit_phrases = {
+            "summary",
+            "give summary",
+            "give me summary",
+            "show summary",
+            "show me summary",
+            "portfolio summary",
+            "give portfolio summary",
+            "summarize my portfolio",
+            "summary of my portfolio",
+            "quick summary",
+        }
+
+        if text in explicit_phrases or any(phrase in text for phrase in explicit_phrases if len(phrase.split()) > 1):
+            return True
+
+        return any(term in text for term in portfolio_terms)
+
     def _small_talk_reply(self, text: str, holdings: list[dict]) -> str | None:
         if text in {"hi", "hello", "hey", "hii", "hola"}:
             return "Hello there. What's on your mind today?"
@@ -292,6 +384,31 @@ class PersonalAssistantService:
         if not holdings:
             return "You do not have any portfolio stocks yet."
         return f"You currently have {len(holdings)} stocks in your portfolio."
+
+    def _portfolio_summary_reply(self, user, holdings: list[dict]) -> str:
+        if not holdings:
+            return "Your portfolio is empty right now. Add a few stocks first, and then I can summarize your holdings, sectors, and risk view."
+
+        insights = StocksPortfolioService().portfolio_insights(user)
+        sector_counts: dict[str, int] = {}
+        for item in holdings:
+            sector = item["sector"] or "Unassigned"
+            sector_counts[sector] = sector_counts.get(sector, 0) + 1
+
+        largest_sector = "Unassigned"
+        if sector_counts:
+            largest_sector = sorted(sector_counts.items(), key=lambda pair: (-pair[1], pair[0]))[0][0]
+
+        top_gainer = (insights.get("top_gainers") or [None])[0]
+        top_loser = (insights.get("top_losers") or [None])[0]
+
+        parts = [f"You currently have {len(holdings)} portfolio stocks."]
+        parts.append(f"Your largest sector is {largest_sector}.")
+        if top_gainer:
+            parts.append(f"Top gainer: {top_gainer['symbol']} ({top_gainer['change_pct']}%).")
+        if top_loser:
+            parts.append(f"Top loser: {top_loser['symbol']} ({top_loser['change_pct']}%).")
+        return " ".join(parts)
 
     def _sector_reply(self, holdings: list[dict]) -> str:
         if not holdings:
@@ -489,9 +606,9 @@ class PersonalAssistantService:
 
     def _default_reply(self, holdings: list[dict]) -> str:
         if holdings:
-            return "I checked the charts, the news, and my soul. Still no signal on that one."
+            return "I could not match that to your current portfolio tools just yet. Try asking about your holdings, risk breakdown, top gainer, stock comparison, forecast, or one of the app modules."
         return (
-            "I checked the charts, the news, and my soul. Still no signal on that one."
+            "I could not match that to a project-specific answer just yet. You can ask about app modules, stock search, forecasting, sentiment, commodities, BTC, or add some portfolio stocks first."
         )
 
     def _rag_reply(self, message: str, history: list[dict]) -> dict | None:
@@ -503,3 +620,19 @@ class PersonalAssistantService:
         except Exception:
             logger.exception("Assistant RAG pipeline failed; falling back to deterministic assistant.")
             return None
+
+    def _enabled_modules(self) -> str:
+        return ", ".join(
+            [
+                "Stocks",
+                "Portfolio",
+                "Quality Stocks",
+                "Compare",
+                "Risk",
+                "Clustering",
+                "Forecast",
+                "Sentiment",
+                "Gold/Silver",
+                "BTC Forecast",
+            ]
+        )

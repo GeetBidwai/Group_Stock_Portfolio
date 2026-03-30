@@ -39,8 +39,8 @@ class StocksPortfolioServiceTests(TestCase):
         self.assertEqual(payload["top_losers"][0]["symbol"], "MOTHERSON")
 
     @patch("apps.stocks_module.services.MarketDataService.get_ticker_snapshot")
-    @patch("apps.stocks_module.services.RiskCategorizationService.classify")
-    def test_portfolio_insights_prefers_reference_risk_and_filters_true_gainer_loser(self, mock_classify, mock_snapshot):
+    @patch("apps.stocks_module.services.RiskCategorizationService.classify", side_effect=Exception("risk unavailable"))
+    def test_portfolio_insights_falls_back_to_reference_risk_when_live_risk_fails(self, _mock_classify, mock_snapshot):
         stock_one = self._create_stock("ACC", "ACC Ltd.")
         stock_two = self._create_stock("INFY", "Infosys")
         stock_three = self._create_stock("ITC", "ITC")
@@ -63,7 +63,6 @@ class StocksPortfolioServiceTests(TestCase):
         self.assertEqual(payload["risk_breakdown"], {"low": 1, "medium": 1, "high": 1})
         self.assertEqual([item["symbol"] for item in payload["top_gainers"]], ["ACC"])
         self.assertEqual([item["symbol"] for item in payload["top_losers"]], ["INFY"])
-        mock_classify.assert_not_called()
 
     @patch("apps.stocks_module.services.MarketDataService.get_ticker_snapshot", return_value={"current_price": 100, "history": [{"open": 100, "close": 100}, {"open": 100, "close": 100}]})
     @patch("apps.stocks_module.services.RiskCategorizationService.classify", return_value={"risk_category": "medium"})

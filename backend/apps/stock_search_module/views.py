@@ -37,7 +37,7 @@ class StockRiskListView(views.APIView):
         if scope not in {"tracked", "portfolio"}:
             scope = "tracked"
 
-        cache_key = f"stocks:risk:list:v2:{scope}:{request.user.id}"
+        cache_key = f"stocks:risk:list:v3:{scope}:{request.user.id}"
         cached = cache.get(cache_key)
         if cached is not None:
             return response.Response(cached)

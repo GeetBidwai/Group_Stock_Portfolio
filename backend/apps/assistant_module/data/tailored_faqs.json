@@ -1,0 +1,112 @@
+[
+  {
+    "id": "tailored-1",
+    "questions": ["What is in my portfolio?", "Show my portfolio", "What stocks do I have?"],
+    "answer": "Hey {{username}}! You currently have {{portfolio_count}} stocks in your portfolio: {{portfolio_symbols}}. You can also open the Portfolio section to view them grouped by sector and explore portfolio insights."
+  },
+  {
+    "id": "tailored-2",
+    "questions": ["How many stocks do I have in my portfolio?", "Portfolio count", "How many holdings do I have?"],
+    "answer": "You currently have {{portfolio_count}} stocks in your portfolio. If you want, I can also help you check your sector distribution or current risk breakdown."
+  },
+  {
+    "id": "tailored-3",
+    "questions": ["Which sector has the most stocks in my portfolio?", "Largest sector in my portfolio", "Top sector in my portfolio"],
+    "answer": "Your portfolio's largest sector is {{top_sector}}. You can open the Portfolio view to see how your holdings are distributed across sectors."
+  },
+  {
+    "id": "tailored-4",
+    "questions": ["What is my portfolio risk breakdown?", "Show my risk breakdown", "Portfolio risk split"],
+    "answer": "Your current portfolio risk breakdown is {{risk_low_count}} low-risk stocks, {{risk_medium_count}} medium-risk stocks, and {{risk_high_count}} high-risk stocks. For a deeper view, open the Risk section."
+  },
+  {
+    "id": "tailored-5",
+    "questions": ["Which stock is my top gainer right now?", "Top gainer", "Best performer in my portfolio"],
+    "answer": "Your current top gainer is {{top_gainer_symbol}}, with a move of {{top_gainer_change_pct}}%. You can explore more details from your portfolio insights and compare it with other holdings if needed."
+  },
+  {
+    "id": "tailored-6",
+    "questions": ["Which stock is my top loser right now?", "Top loser", "Worst performer in my portfolio"],
+    "answer": "Your current top loser is {{top_loser_symbol}}, with a move of {{top_loser_change_pct}}%. You may want to review it in Compare, Forecast, or Sentiment depending on what you want to investigate next."
+  },
+  {
+    "id": "tailored-7",
+    "questions": ["Can I compare two stocks from my portfolio?", "Compare portfolio stocks", "Stock comparison"],
+    "answer": "Yes. The Compare section lets you compare two portfolio-backed stocks side by side using return percentage, volatility, normalized trend, market cap, and PE ratio where available."
+  },
+  {
+    "id": "tailored-8",
+    "questions": ["Forecast one of my stocks", "How do I forecast a stock?", "Stock forecast"],
+    "answer": "To forecast a stock, open the Forecast section, choose a supported stock symbol, select a horizon like 3M, 6M, or 1Y, and run the forecast. The platform uses model-based projections and will show an unavailable state if the stock does not have enough usable history."
+  },
+  {
+    "id": "tailored-9",
+    "questions": ["What can you do?", "What can I ask you?", "How can you help me?"],
+    "answer": "I'm your Market Atlas assistant. I can help you understand what's in your portfolio, summarize holdings, sector balance, risk breakdown, top gainers and losers, guide you through Compare and Forecast, and explain how modules like Sentiment, Recommendations, Gold/Silver, BTC Forecast, and Quality Stocks work."
+  },
+  {
+    "id": "tailored-10",
+    "questions": ["What can I do after login?", "What is available after login?", "What can I use in this app?"],
+    "answer": "After login, you can browse stocks, manage portfolio data, compare holdings, review risk insights, run forecasts, analyze sentiment, explore recommendations, check gold and silver analytics, open BTC forecasts, and use the assistant for guided help."
+  },
+  {
+    "id": "tailored-11",
+    "questions": ["How do I search for a stock?", "Search stock", "Find a stock by symbol"],
+    "answer": "Use the Stocks section to search by symbol or company name. You can also browse by market and then sector to discover stocks from the catalog."
+  },
+  {
+    "id": "tailored-12",
+    "questions": ["What does the Quality Stocks section show?", "Quality Stocks", "Quality stock report"],
+    "answer": "The Quality Stocks section highlights research-oriented stock views and links into detailed quality stock reports. It is designed to help users review higher-level stock quality information in a structured format."
+  },
+  {
+    "id": "tailored-13",
+    "questions": ["How does the Sentiment module work?", "Sentiment analysis", "Can I download a sentiment report?"],
+    "answer": "The Sentiment module analyzes recent news related to a stock and summarizes the overall tone as positive, neutral, or negative. You can also download a sentiment report PDF for supported stocks."
+  },
+  {
+    "id": "tailored-14",
+    "questions": ["What are the Recommendations?", "Recommendations section", "How do recommendations work?"],
+    "answer": "The Recommendations section provides ranked stock ideas, including stronger momentum names and weaker or value-style opportunities. Depending on data availability, it may show live-generated results or a cached fallback snapshot."
+  },
+  {
+    "id": "tailored-15",
+    "questions": ["Can I analyze gold and silver here?", "Gold and silver analytics", "Gold silver correlation"],
+    "answer": "Yes. The Gold/Silver area includes gold analytics, silver analytics, and correlation views so you can track commodity behavior alongside your stock research."
+  },
+  {
+    "id": "tailored-16",
+    "questions": ["What does the BTC Forecast section show?", "BTC forecast", "Bitcoin forecast section"],
+    "answer": "The BTC Forecast section shows BTC/USD forecast-oriented views and historical trend data for supported ranges. It is meant for market analysis and directional context, not direct trading execution."
+  },
+  {
+    "id": "tailored-17",
+    "questions": ["What does the Risk section show?", "Risk section", "How does risk work here?"],
+    "answer": "The Risk section helps classify stocks into low, medium, and high risk categories based on volatility-oriented analysis. It is useful for reviewing individual stock risk and understanding overall portfolio exposure."
+  },
+  {
+    "id": "tailored-18",
+    "questions": ["What is the Clustering section?", "Clustering", "How does clustering help?"],
+    "answer": "The Clustering section groups portfolio stocks based on behavioral similarity and market characteristics. It can help you explore patterns inside your holdings and think about concentration or diversification."
+  },
+  {
+    "id": "tailored-19",
+    "questions": ["Why am I seeing token not valid?", "Unauthorized error", "Token expired"],
+    "answer": "This usually means your access token is missing, expired, or no longer valid. The normal recovery path is token refresh if a valid refresh token exists; otherwise, log in again."
+  },
+  {
+    "id": "tailored-20",
+    "questions": ["Why is my portfolio visible in one page but missing in Compare or Forecast?", "Portfolio mismatch between pages", "Portfolio empty in dropdown"],
+    "answer": "Some parts of the app read from different portfolio-backed endpoints. If a stock appears in one portfolio view but not in another selector, it can be caused by different portfolio sources, symbol mapping differences, or stale data between flows."
+  },
+  {
+    "id": "tailored-21",
+    "questions": ["Why is live market data unavailable?", "Market data unavailable", "Stock data unavailable"],
+    "answer": "Some modules depend on external market data providers. If live data is temporarily unavailable, the app may fall back to cached values or show a graceful unavailable state instead of crashing."
+  },
+  {
+    "id": "tailored-22",
+    "questions": ["Why does data work locally but not after deployment?", "Works locally not on server", "Deployment data issue"],
+    "answer": "When local works but deployment does not, common causes are missing seed/catalog data, missing environment variables, outbound network restrictions, or stale deployment state. This is usually an environment or data availability issue rather than a frontend chat issue."
+  }
+]

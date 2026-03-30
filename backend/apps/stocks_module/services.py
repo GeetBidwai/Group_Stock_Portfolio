@@ -108,7 +108,7 @@ class StocksPortfolioService:
         return f"stocks-module:portfolio-insights:v3:{user.id}:{self._holdings_signature(user)}"
 
     def _portfolio_risk_cache_key(self, user) -> str:
-        return f"stocks-module:portfolio-risk:v1:{user.id}:{self._holdings_signature(user)}"
+        return f"stocks-module:portfolio-risk:v2:{user.id}:{self._holdings_signature(user)}"
 
     def _clear_user_caches(self, user_id: int):
         # Signature-based cache keys refresh automatically when holdings change.
@@ -184,17 +184,19 @@ class StocksPortfolioService:
 
         for holding in holdings:
             reference = reference_map.get(holding["symbol"])
-            stored_risk = (getattr(reference, "risk_category", "") or "").strip().lower()
-            risk = stored_risk if stored_risk in {"low", "medium", "high"} else None
-
             market_symbol = holding["market_symbol"] or self._market_symbol_from_reference(holding["symbol"], reference)
-            if risk is None and market_symbol:
+            risk = None
+            if market_symbol:
                 try:
                     risk_payload = risk_service.classify(market_symbol)
                     live_risk = (risk_payload.get("risk_category") or "").strip().lower()
                     risk = live_risk if live_risk in {"low", "medium", "high"} else None
                 except Exception:
                     risk = None
+
+            if risk is None:
+                stored_risk = (getattr(reference, "risk_category", "") or "").strip().lower()
+                risk = stored_risk if stored_risk in {"low", "medium", "high"} else None
 
             items.append(
                 {
