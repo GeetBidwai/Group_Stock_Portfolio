@@ -111,7 +111,7 @@ class StocksPortfolioService:
         return f"stocks-module:portfolio-insights:v3:{user.id}:{self._holdings_signature(user)}"
 
     def _portfolio_risk_cache_key(self, user) -> str:
-        return f"stocks-module:portfolio-risk:v1:{user.id}:{self._holdings_signature(user)}"
+        return f"stocks-module:portfolio-risk:v2:{user.id}:{self._holdings_signature(user)}"
 
     def _risk_classification_cache_key(self, market_symbol: str) -> str:
         return f"stocks-module:risk-classify:v1:{(market_symbol or '').upper().strip()}"
@@ -274,6 +274,10 @@ class StocksPortfolioService:
             market_symbol = holding["market_symbol"] or self._market_symbol_from_reference(symbol, reference)
             if risk is None:
                 risk = live_risk_map.get(symbol)
+
+            if risk is None:
+                stored_risk = (getattr(reference, "risk_category", "") or "").strip().lower()
+                risk = stored_risk if stored_risk in {"low", "medium", "high"} else None
 
             items.append(
                 {

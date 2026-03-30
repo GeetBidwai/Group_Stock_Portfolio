@@ -61,25 +61,25 @@ export function QualityStockReportPage() {
     }));
   }, [data]);
 
+  const metrics = Object.entries(data?.report_json?.metrics || {});
+  const risks = data?.report_json?.risks || [];
+  const catalysts = data?.report_json?.catalysts || [];
+
   return (
     <>
       <section className="panel">
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="quality-report-hero">
           <div>
-            <p className="muted" style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.18em", fontSize: 12 }}>Quality Report</p>
-            <h1 style={{ marginBottom: 6 }}>{data?.stock_name || "Quality Stock Report"}</h1>
-            <p className="muted" style={{ margin: 0 }}>
-              {data?.stock_symbol || ""} {data?.portfolio_name ? `· ${data.portfolio_name}` : ""}
+            <p className="eyebrow quality-report-hero__eyebrow">Quality Report</p>
+            <h1 className="quality-report-hero__title">{data?.stock_name || "Quality Stock Report"}</h1>
+            <p className="muted quality-report-hero__meta">
+              {data?.stock_symbol || ""}
+              {data?.portfolio_name ? ` · ${data.portfolio_name}` : ""}
             </p>
           </div>
           <Link
             to={data?.portfolio ? `/quality-stocks?portfolio=${encodeURIComponent(data.portfolio)}` : "/quality-stocks"}
-            style={{
-              padding: "12px 16px",
-              borderRadius: 14,
-              border: "1px solid rgba(17, 75, 95, 0.12)",
-              background: "rgba(255, 255, 255, 0.72)",
-            }}
+            className="ghost-btn"
           >
             Back to Quality Stocks
           </Link>
@@ -91,72 +91,71 @@ export function QualityStockReportPage() {
         {!loading && error ? <p style={{ margin: 0 }}>{error}</p> : null}
 
         {!loading && !error && data ? (
-          <div style={{ display: "grid", gap: 20 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-              <article className="dashboard-card">
-                <p className="muted" style={{ margin: 0 }}>AI Rating</p>
-                <h2 style={{ margin: "8px 0 0" }}>{data.ai_rating}/10</h2>
+          <div className="quality-report-layout">
+            <div className="quality-report-summary-grid">
+              <article className="dashboard-card quality-report-stat">
+                <p className="eyebrow quality-report-stat__label">AI Rating</p>
+                <h2 className="quality-report-stat__value">{data.ai_rating}/10</h2>
               </article>
-              <article className="dashboard-card">
-                <p className="muted" style={{ margin: 0 }}>Signal</p>
-                <div style={{ marginTop: 10 }}>
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      padding: "8px 12px",
-                      borderRadius: 999,
-                      fontWeight: 700,
-                      ...(SIGNAL_STYLES[data.buy_signal] || SIGNAL_STYLES.HOLD),
-                    }}
-                  >
+              <article className="dashboard-card quality-report-stat">
+                <p className="eyebrow quality-report-stat__label">Signal</p>
+                <div className="quality-report-stat__signal">
+                  <span className="quality-report-pill" style={SIGNAL_STYLES[data.buy_signal] || SIGNAL_STYLES.HOLD}>
                     {data.buy_signal}
                   </span>
                 </div>
               </article>
             </div>
 
-            <article className="dashboard-card">
-              <h3 style={{ marginTop: 0 }}>Summary</h3>
-              <p style={{ margin: 0 }}>{data.report_json?.summary || "No summary available."}</p>
+            <article className="dashboard-card quality-report-copy-card">
+              <h3 className="quality-report-section-title">Summary</h3>
+              <p className="quality-report-body">{data.report_json?.summary || "No summary available."}</p>
             </article>
 
-            <div className="grid two" style={{ gap: 20 }}>
-              <article className="dashboard-card">
-                <h3 style={{ marginTop: 0 }}>Risks</h3>
-                <div style={{ display: "grid", gap: 10 }}>
-                  {(data.report_json?.risks || []).map((risk, index) => (
-                    <p key={index} style={{ margin: 0 }}>{risk}</p>
-                  ))}
-                </div>
+            <div className="quality-report-copy-grid">
+              <article className="dashboard-card quality-report-copy-card">
+                <h3 className="quality-report-section-title">Risks</h3>
+                {risks.length ? (
+                  <div className="quality-report-list-block">
+                    {risks.map((risk, index) => (
+                      <p key={index} className="quality-report-body">{risk}</p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="quality-report-body">No major risk notes are available for this report.</p>
+                )}
               </article>
-              <article className="dashboard-card">
-                <h3 style={{ marginTop: 0 }}>Catalysts</h3>
-                <div style={{ display: "grid", gap: 10 }}>
-                  {(data.report_json?.catalysts || []).map((item, index) => (
-                    <p key={index} style={{ margin: 0 }}>{item}</p>
-                  ))}
-                </div>
+
+              <article className="dashboard-card quality-report-copy-card">
+                <h3 className="quality-report-section-title">Catalysts</h3>
+                {catalysts.length ? (
+                  <div className="quality-report-list-block">
+                    {catalysts.map((item, index) => (
+                      <p key={index} className="quality-report-body">{item}</p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="quality-report-body">No catalyst notes are available for this report.</p>
+                )}
               </article>
             </div>
 
-            <article className="dashboard-card">
-              <h3 style={{ marginTop: 0 }}>Metrics</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-                {Object.entries(data.report_json?.metrics || {}).map(([key, value]) => (
-                  <div key={key}>
-                    <p className="muted" style={{ margin: 0, textTransform: "uppercase", fontSize: 12 }}>{key.replaceAll("_", " ")}</p>
-                    <p style={{ margin: "6px 0 0", fontWeight: 700 }}>{value ?? "N/A"}</p>
+            <article className="dashboard-card quality-report-copy-card">
+              <h3 className="quality-report-section-title">Metrics</h3>
+              <div className="quality-report-metrics-grid">
+                {metrics.map(([key, value]) => (
+                  <div key={key} className="quality-report-metric">
+                    <p className="eyebrow quality-report-metric__label">{key.replaceAll("_", " ")}</p>
+                    <p className="quality-report-metric__value">{value ?? "N/A"}</p>
                   </div>
                 ))}
               </div>
             </article>
 
-            <div className="grid two" style={{ gap: 20 }}>
-              <article className="dashboard-card">
-                <h3 style={{ marginTop: 0 }}>Price History</h3>
-                <div style={{ height: 260 }}>
+            <div className="quality-report-chart-grid">
+              <article className="dashboard-card quality-report-chart-card">
+                <h3 className="quality-report-section-title">Price History</h3>
+                <div className="quality-report-chart-shell">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={historySeries}>
                       <XAxis dataKey="date" />
@@ -167,9 +166,10 @@ export function QualityStockReportPage() {
                   </ResponsiveContainer>
                 </div>
               </article>
-              <article className="dashboard-card">
-                <h3 style={{ marginTop: 0 }}>Forecast</h3>
-                <div style={{ height: 260 }}>
+
+              <article className="dashboard-card quality-report-chart-card">
+                <h3 className="quality-report-section-title">Forecast</h3>
+                <div className="quality-report-chart-shell">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={forecastSeries}>
                       <XAxis dataKey="date" />

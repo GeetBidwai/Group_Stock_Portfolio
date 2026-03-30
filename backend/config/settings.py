@@ -155,8 +155,8 @@ FEATURE_FLAGS = {
 }
 
 RISK_THRESHOLDS = {
-    "low": 0.01,
-    "medium": 0.02,
+    "low": 0.2,
+    "medium": 0.35,
 }
 
 if not DEBUG:
